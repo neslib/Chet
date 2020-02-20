@@ -580,6 +580,7 @@ end;
 class function THeaderTranslator.IsProceduralType(const AType: TType;
   out APointee: TType): Boolean;
 begin
+  APointee := AType;
   if (AType.Kind = TTypeKind.Pointer) then
   begin
     APointee := AType.PointeeType;
@@ -1690,16 +1691,25 @@ begin
     var
       CursorType, PointeeType: TType;
       ArgName: String;
+      IsProcType: Boolean;
     begin
       if (ACursor.Kind = TCursorKind.ParmDecl) then
       begin
         ArgName := ValidIdentifier(ACursor.Spelling);
         if (ArgName = '') then
           ArgName := 'p' + (ArgIndex + 1).ToString;
-        FWriter.Write(ArgName + ': ');
 
         CursorType := ACursor.CursorType;
-        if (IsProceduralType(CursorType, PointeeType)) then
+        IsProcType := IsProceduralType(CursorType, PointeeType);
+
+        if (CursorType.IsConstQualified) or (PointeeType.IsConstQualified) then
+          { Issue #2 (https://github.com/neslib/Chet/issues/2):
+            Add support for const parameters. }
+          FWriter.Write('const ');
+
+        FWriter.Write(ArgName + ': ');
+
+        if (IsProcType) then
         begin
           { The argument is a procedural type. If this is a top-level function
             (AInStruct=False), then a procedural type declaration has been
