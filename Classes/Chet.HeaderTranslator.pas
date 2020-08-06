@@ -564,6 +564,10 @@ begin
   if (C < 'a') or (C > 'z') then
     Exit(False);
 
+  C := AStr.Chars[AStr.Length - 1];
+  if (C = '''') or (C = '"') then
+    Exit(False);
+
   UpCount := 0;
   LoCount := 0;
   for C in AStr do
@@ -1189,7 +1193,7 @@ begin
     end
     else if IsMostlyLowerCase(S) then
     begin
-      WriteToDo(Format('Macro probably use invalid symbol "%s":', [S]));
+      WriteToDo(Format('Macro probably uses invalid symbol "%s":', [S]));
       FInvalidConstants.AddOrSetValue(ACursor.Spelling, 0);
       WriteCommentedOutOriginalSource(ACursor);
       Exit;
@@ -1229,6 +1233,28 @@ begin
   begin
     S := Tokens[I];
     IsString := False;
+
+    { Issue #4 (https://github.com/neslib/Chet/issues/4)
+      Convert wide character string constant (L"...").
+      These are the supported prefixes:
+      * L (wide char/string).
+      * u (UTF-16 encoded char/string).
+      * U (UTF-32 encoded char/string).
+      These apply to both characters (single quote) and strings (double quote).
+      The contents in the string literal is *not* converted/decoded. }
+    if (S.Length >= 3) then
+    begin
+      C := S.Chars[S.Length - 1];
+      if (C = '''') or (C = '"') then
+      begin
+        if (S.Chars[1] = C) then
+        begin
+          C := S.Chars[0];
+          if (C = 'L') or (C = 'u') or (C = 'U') then
+            S := S.Substring(1);
+        end;
+      end;
+    end;
 
     { Convert commonly used tokens }
     if (FTokenMap.TryGetValue(S, Conv)) then
@@ -1798,7 +1824,7 @@ end;
 procedure THeaderTranslator.WritePlatforms;
 const
   PLATFORM_DEFINES: array [TPlatformType] of String = (
-    'WIN32', 'WIN64', 'MACOS', 'LINUX', 'IOS', 'ANDROID');
+    'WIN32', 'WIN64', 'MACOS32', 'MACOS64', 'LINUX', 'IOS', 'ANDROID32', 'ANDROID64');
 var
   First: Boolean;
   PT: TPlatformType;
@@ -1821,7 +1847,7 @@ begin
         FWriter.Write('{$ELSEIF Defined(');
 
       FWriter.Write(PLATFORM_DEFINES[PT]);
-      if (PT = TPlatformType.Mac32) then
+      if (PT in [TPlatformType.Mac32, TPlatformType.Mac64]) then
         FWriter.Write(') and not Defined(IOS');
 
       FWriter.WriteLn(')}');

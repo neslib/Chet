@@ -54,6 +54,7 @@ object FormMain: TFormMain
     ItemIndex = 0
     TabOrder = 1
     OnButtonClicked = ButtonGroupCategoriesButtonClicked
+    ExplicitLeft = -2
   end
   object CardPanel: TCardPanel
     Left = 125
@@ -61,7 +62,7 @@ object FormMain: TFormMain
     Width = 439
     Height = 378
     Align = alClient
-    ActiveCard = CardIgnore
+    ActiveCard = CardPlatforms
     BevelOuter = bvNone
     Padding.Left = 4
     Padding.Top = 4
@@ -163,6 +164,8 @@ object FormMain: TFormMain
       Caption = 'Platforms'
       CardIndex = 1
       TabOrder = 4
+      ExplicitLeft = 6
+      ExplicitTop = 2
       object LabelPlatform: TLabel
         Left = 6
         Top = 36
@@ -247,35 +250,16 @@ object FormMain: TFormMain
         OnChange = EditLibraryNameChange
       end
       object CheckBoxLinux64: TCheckBox
-        Tag = 3
-        Left = 6
-        Top = 134
-        Width = 110
-        Height = 17
-        Caption = '64-bit Linux'
-        TabOrder = 10
-        OnClick = CheckBoxPlatformClick
-      end
-      object EditLibLinux64: TEdit
-        Tag = 3
-        Left = 118
-        Top = 132
-        Width = 175
-        Height = 21
-        TabOrder = 11
-        OnChange = EditLibraryNameChange
-      end
-      object CheckBoxIOS: TCheckBox
         Tag = 4
         Left = 6
         Top = 161
         Width = 110
         Height = 17
-        Caption = 'iOS'
+        Caption = '64-bit Linux'
         TabOrder = 13
         OnClick = CheckBoxPlatformClick
       end
-      object EditLibIOS: TEdit
+      object EditLibLinux64: TEdit
         Tag = 4
         Left = 118
         Top = 159
@@ -284,23 +268,42 @@ object FormMain: TFormMain
         TabOrder = 14
         OnChange = EditLibraryNameChange
       end
-      object CheckBoxAndroid: TCheckBox
+      object CheckBoxIOS: TCheckBox
         Tag = 5
         Left = 6
         Top = 188
         Width = 110
         Height = 17
-        Caption = 'Android'
+        Caption = 'iOS'
         TabOrder = 16
         OnClick = CheckBoxPlatformClick
       end
-      object EditLibAndroid: TEdit
+      object EditLibIOS: TEdit
         Tag = 5
         Left = 118
         Top = 186
         Width = 175
         Height = 21
         TabOrder = 17
+        OnChange = EditLibraryNameChange
+      end
+      object CheckBoxAndroid32: TCheckBox
+        Tag = 6
+        Left = 6
+        Top = 215
+        Width = 110
+        Height = 17
+        Caption = '32-bit Android'
+        TabOrder = 19
+        OnClick = CheckBoxPlatformClick
+      end
+      object EditLibAndroid32: TEdit
+        Tag = 6
+        Left = 118
+        Top = 213
+        Width = 175
+        Height = 21
+        TabOrder = 20
         OnChange = EditLibraryNameChange
       end
       object EditPrefixWin32: TEdit
@@ -330,15 +333,6 @@ object FormMain: TFormMain
         OnChange = EditPrefixChange
       end
       object EditPrefixLinux64: TEdit
-        Tag = 3
-        Left = 306
-        Top = 132
-        Width = 30
-        Height = 21
-        TabOrder = 12
-        OnChange = EditPrefixChange
-      end
-      object EditPrefixIOS: TEdit
         Tag = 4
         Left = 306
         Top = 159
@@ -347,13 +341,22 @@ object FormMain: TFormMain
         TabOrder = 15
         OnChange = EditPrefixChange
       end
-      object EditPrefixAndroid: TEdit
+      object EditPrefixIOS: TEdit
         Tag = 5
         Left = 306
         Top = 186
         Width = 30
         Height = 21
         TabOrder = 18
+        OnChange = EditPrefixChange
+      end
+      object EditPrefixAndroid32: TEdit
+        Tag = 6
+        Left = 306
+        Top = 213
+        Width = 30
+        Height = 21
+        TabOrder = 21
         OnChange = EditPrefixChange
       end
       object EditLibConstant: TEdit
@@ -363,6 +366,62 @@ object FormMain: TFormMain
         Height = 21
         TabOrder = 0
         OnChange = EditLibConstantChange
+      end
+      object CheckBoxMac64: TCheckBox
+        Tag = 3
+        Left = 6
+        Top = 134
+        Width = 110
+        Height = 17
+        Caption = '64-bit macOS'
+        TabOrder = 10
+        OnClick = CheckBoxPlatformClick
+      end
+      object EditLibMac64: TEdit
+        Tag = 3
+        Left = 118
+        Top = 132
+        Width = 175
+        Height = 21
+        TabOrder = 11
+        OnChange = EditLibraryNameChange
+      end
+      object EditPrefixMac64: TEdit
+        Tag = 3
+        Left = 306
+        Top = 132
+        Width = 30
+        Height = 21
+        TabOrder = 12
+        OnChange = EditPrefixChange
+      end
+      object CheckBoxAndroid64: TCheckBox
+        Tag = 7
+        Left = 6
+        Top = 242
+        Width = 110
+        Height = 17
+        Caption = '64-bit Android'
+        TabOrder = 22
+        OnClick = CheckBoxPlatformClick
+      end
+      object EditLibAndroid64: TEdit
+        Tag = 7
+        Left = 118
+        Top = 240
+        Width = 175
+        Height = 21
+        TabOrder = 23
+        OnChange = EditLibraryNameChange
+      end
+      object EditPrefixAndroid64: TEdit
+        Tag = 7
+        Left = 306
+        Top = 240
+        Width = 30
+        Height = 21
+        TabOrder = 24
+        OnChange = EditPrefixChange
       end
     end
     object CardParseOptions: TCard
@@ -604,7 +663,7 @@ object FormMain: TFormMain
           'be translated. Enter one symbol per line. Symbols are case-sensi' +
           'tive.'
         WordWrap = True
-        ExplicitWidth = 424
+        ExplicitLeft = 5
       end
       object MemoIgnore: TMemo
         AlignWithMargins = True
@@ -809,7 +868,7 @@ object FormMain: TFormMain
     Left = 336
     Top = 332
     Bitmap = {
-      494C010105004000480010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C010105004000040010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000002000000001002000000000000020
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

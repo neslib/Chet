@@ -86,8 +86,8 @@ type
     EditLibLinux64: TEdit;
     CheckBoxIOS: TCheckBox;
     EditLibIOS: TEdit;
-    CheckBoxAndroid: TCheckBox;
-    EditLibAndroid: TEdit;
+    CheckBoxAndroid32: TCheckBox;
+    EditLibAndroid32: TEdit;
     LabelLibrary: TLabel;
     LabelPrefix: TLabel;
     EditPrefixWin32: TEdit;
@@ -95,7 +95,7 @@ type
     EditPrefixMac32: TEdit;
     EditPrefixLinux64: TEdit;
     EditPrefixIOS: TEdit;
-    EditPrefixAndroid: TEdit;
+    EditPrefixAndroid32: TEdit;
     LabelLibConstant: TLabel;
     EditLibConstant: TEdit;
     ActionOpen: TAction;
@@ -120,6 +120,12 @@ type
     LabelIgnore: TLabel;
     MemoIgnore: TMemo;
     ImageList: TImageList;
+    CheckBoxMac64: TCheckBox;
+    EditLibMac64: TEdit;
+    EditPrefixMac64: TEdit;
+    CheckBoxAndroid64: TCheckBox;
+    EditLibAndroid64: TEdit;
+    EditPrefixAndroid64: TEdit;
     procedure ButtonGroupCategoriesButtonClicked(Sender: TObject;
       Index: Integer);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
@@ -459,23 +465,29 @@ begin
   FPlatformEnabled[TPlatformType.Win32] := CheckBoxWin32;
   FPlatformEnabled[TPlatformType.Win64] := CheckBoxWin64;
   FPlatformEnabled[TPlatformType.Mac32] := CheckBoxMac32;
+  FPlatformEnabled[TPlatformType.Mac64] := CheckBoxMac64;
   FPlatformEnabled[TPlatformType.Linux64] := CheckBoxLinux64;
   FPlatformEnabled[TPlatformType.iOS] := CheckBoxIOS;
-  FPlatformEnabled[TPlatformType.Android] := CheckBoxAndroid;
+  FPlatformEnabled[TPlatformType.Android32] := CheckBoxAndroid32;
+  FPlatformEnabled[TPlatformType.Android64] := CheckBoxAndroid64;
 
   FPlatformLibraryName[TPlatformType.Win32] := EditLibWin32;
   FPlatformLibraryName[TPlatformType.Win64] := EditLibWin64;
   FPlatformLibraryName[TPlatformType.Mac32] := EditLibMac32;
+  FPlatformLibraryName[TPlatformType.Mac64] := EditLibMac64;
   FPlatformLibraryName[TPlatformType.Linux64] := EditLibLinux64;
   FPlatformLibraryName[TPlatformType.iOS] := EditLibIOS;
-  FPlatformLibraryName[TPlatformType.Android] := EditLibAndroid;
+  FPlatformLibraryName[TPlatformType.Android32] := EditLibAndroid32;
+  FPlatformLibraryName[TPlatformType.Android64] := EditLibAndroid64;
 
   FPlatformPrefix[TPlatformType.Win32] := EditPrefixWin32;
   FPlatformPrefix[TPlatformType.Win64] := EditPrefixWin64;
   FPlatformPrefix[TPlatformType.Mac32] := EditPrefixMac32;
+  FPlatformPrefix[TPlatformType.Mac64] := EditPrefixMac64;
   FPlatformPrefix[TPlatformType.Linux64] := EditPrefixLinux64;
   FPlatformPrefix[TPlatformType.iOS] := EditPrefixIOS;
-  FPlatformPrefix[TPlatformType.Android] := EditPrefixAndroid;
+  FPlatformPrefix[TPlatformType.Android32] := EditPrefixAndroid32;
+  FPlatformPrefix[TPlatformType.Android64] := EditPrefixAndroid64;
 
   if (ParamCount > 0) then
     Load(ParamStr(1));

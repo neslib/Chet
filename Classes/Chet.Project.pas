@@ -75,14 +75,20 @@ type
     { 32-bit macOS }
     Mac32,
 
+    { 64-bit macOS }
+    Mac64,
+
     { 64-bit Linux }
     Linux64,
 
     { iOS (32- and/or 64-bit) }
     iOS,
 
-    { Android (32-bit) }
-    Android);
+    { 32-bit Android }
+    Android32,
+
+    { 64-bit Android }
+    Android64);
 
 type
   TProject = class;
@@ -491,9 +497,11 @@ begin
   FPlatforms[TPlatformType.Win32].LibraryName := AProjectName + '_win32.dll';
   FPlatforms[TPlatformType.Win64].LibraryName := AProjectName + '_win64.dll';
   FPlatforms[TPlatformType.Mac32].LibraryName := 'lib' + AProjectName + '.dylib';
+  FPlatforms[TPlatformType.Mac64].LibraryName := 'lib' + AProjectName + '_macos.a';
   FPlatforms[TPlatformType.Linux64].LibraryName := 'lib' + AProjectName + '.so';
   FPlatforms[TPlatformType.iOS].LibraryName := 'lib' + AProjectName + '_ios.a';
-  FPlatforms[TPlatformType.Android].LibraryName := 'lib' + AProjectName + '_android.a';
+  FPlatforms[TPlatformType.Android32].LibraryName := 'lib' + AProjectName + '_android32.a';
+  FPlatforms[TPlatformType.Android64].LibraryName := 'lib' + AProjectName + '_android64.a';
 end;
 
 procedure TProject.Reset;
