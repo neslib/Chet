@@ -126,6 +126,8 @@ type
     CheckBoxAndroid64: TCheckBox;
     EditLibAndroid64: TEdit;
     EditPrefixAndroid64: TEdit;
+    LabelConvertUnsignedChar: TLabel;
+    ComboBoxConvertUnsignedChar: TComboBox;
     procedure ButtonGroupCategoriesButtonClicked(Sender: TObject;
       Index: Integer);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
@@ -159,6 +161,7 @@ type
     procedure ComboBoxEnumHandlingChange(Sender: TObject);
     procedure EditUseUnitsChange(Sender: TObject);
     procedure MemoIgnoreExit(Sender: TObject);
+    procedure ComboBoxConvertUnsignedCharChange(Sender: TObject);
   private
     { Private declarations }
     FProject: TProject;
@@ -410,6 +413,11 @@ end;
 procedure TFormMain.ComboBoxConvertCharChange(Sender: TObject);
 begin
   FProject.CharConvert := TCharConvert(ComboBoxConvertChar.ItemIndex);
+end;
+
+procedure TFormMain.ComboBoxConvertUnsignedCharChange(Sender: TObject);
+begin
+  FProject.UnsignedCharConvert := TUnsignedCharConvert(ComboBoxConvertUnsignedChar.ItemIndex);
 end;
 
 procedure TFormMain.ComboBoxConvertCommentsChange(Sender: TObject);
