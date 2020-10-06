@@ -748,7 +748,15 @@ end;
 procedure THeaderTranslator.SetupBuiltinTypes;
 begin
   FBuiltinTypes[TTypeKind.Bool] := 'Boolean';
-  FBuiltinTypes[TTypeKind.Char_U] := 'Byte';
+
+  case FProject.UnsignedCharConvert of
+    TUnsignedCharConvert.UTF8Char: FBuiltinTypes[TTypeKind.Char_U] := 'UTF8Char';
+    TUnsignedCharConvert.Shortint: FBuiltinTypes[TTypeKind.Char_U] := 'Shortint';
+    TUnsignedCharConvert.AnsiChar: FBuiltinTypes[TTypeKind.Char_U] := 'AnsiChar';
+  else
+    FBuiltinTypes[TTypeKind.Char_U] := 'Byte';
+  end;
+
   FBuiltinTypes[TTypeKind.UChar] := 'Byte';
   FBuiltinTypes[TTypeKind.Char16] := 'WideChar';
   FBuiltinTypes[TTypeKind.Char32] := 'UCS4Char';
@@ -1555,21 +1563,36 @@ begin
     TCharConvert.UTF8Char:
       begin
         CheckIndirection(['char'], 'UTF8Char');
-        CheckIndirection(['unsigned char'], 'Byte');
       end;
     TCharConvert.Shortint:
       begin
         CheckIndirection(['char', 'signed char'], 'Shortint');
-        CheckIndirection(['unsigned char'], 'Byte');
       end;
     TCharConvert.AnsiChar:
       begin
         CheckIndirection(['char', 'signed char'], 'AnsiChar');
-        CheckIndirection(['unsigned char'], 'Byte');
       end
   else
-    CheckIndirection(['char', 'unsigned char'], 'Byte');
+    CheckIndirection(['char'], 'Byte');
   end;
+
+  case FProject.UnsignedCharConvert of
+    TUnsignedCharConvert.UTF8Char:
+      begin
+        CheckIndirection(['unsigned char'], 'UTF8Char');
+      end;
+    TUnsignedCharConvert.Shortint:
+      begin
+        CheckIndirection(['unsigned char'], 'Shortint');
+      end;
+    TUnsignedCharConvert.AnsiChar:
+      begin
+        CheckIndirection(['unsigned char'], 'AnsiChar');
+      end
+  else
+    CheckIndirection(['unsigned char'], 'Byte');
+  end;
+
   CheckIndirection(['short', 'short int'], 'Smallint');
   CheckIndirection(['unsigned short int'], 'Word');
   CheckIndirection(['long', 'int', 'long int'], 'Integer');

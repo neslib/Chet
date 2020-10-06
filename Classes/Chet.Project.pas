@@ -33,6 +33,20 @@ type
     { Convert to AnsiChar }
     AnsiChar);
 
+  { How to convert the C "unsigned char" type }
+  TUnsignedCharConvert = (
+    { Convert to UTF8Char }
+    UTF8Char,
+
+    { Convert to signed 8-bit integer }
+    Shortint,
+
+    { Convert to unsigned 8-bit integer }
+    Byte,
+
+    { Convert to AnsiChar }
+    AnsiChar);
+
   { How to treat documentation comments }
   TCommentConvert = (
     { Keep comments as-is (that is, in Doxygen format) }
@@ -160,6 +174,7 @@ type
 
     FCallConv: TCallConv;
     FCharConvert: TCharConvert;
+    FUnsignedCharConvert: TUnsignedCharConvert;
     FCommentConvert: TCommentConvert;
     FReservedWordHandling: TReservedWordHandling;
     FTreatDirectivesAsReservedWords: Boolean;
@@ -175,6 +190,7 @@ type
     function GetCmdLineArgs: TArray<String>;
     procedure SetTargetPasFile(const Value: String);
     procedure SetCharConvert(const Value: TCharConvert);
+    procedure SetUnsignedCharConvert(const Value: TUnsignedCharConvert);
     procedure SetCommentConvert(const Value: TCommentConvert);
     procedure SetCallConv(const Value: TCallConv);
     procedure SetReservedWordHandling(const Value: TReservedWordHandling);
@@ -276,6 +292,9 @@ type
     { Specifies how the C "char" type should be handled. }
     property CharConvert: TCharConvert read FCharConvert write SetCharConvert;
 
+    { Specifies how the C "unsigned char" type should be handled. }
+    property UnsignedCharConvert: TUnsignedCharConvert read FUnsignedCharConvert write SetUnsignedCharConvert;
+
     { How to handle comments.
       Note that Clang only parses Doxygen style documentation comments in these
       formats:
@@ -334,6 +353,7 @@ const // Ini Identifiers
   ID_CMD_LINE_ARGS = 'CmdLineArgs';
   ID_CALL_CONV = 'CallConv';
   ID_CHAR_CONVERT = 'CharConvert';
+  ID_UNSIGNED_CHAR_CONVERT = 'UnsignedCharConvert';
   ID_COMMENT_CONVERT = 'CommentConvert';
   ID_RESERVED_WORD_HANDLING = 'ReservedWordHandling';
   ID_TREAT_DIRECTIVES_AS_RESERVED_WORDS = 'TreatDirectivesAsReservedWords';
@@ -472,6 +492,7 @@ begin
 
     FCallConv := IniFile.ReadEnum(IS_CONVERT_OPTIONS, ID_CALL_CONV, TCallConv.Cdecl);
     FCharConvert := IniFile.ReadEnum(IS_CONVERT_OPTIONS, ID_CHAR_CONVERT, TCharConvert.UTF8Char);
+    FUnsignedCharConvert := IniFile.ReadEnum(IS_CONVERT_OPTIONS, ID_UNSIGNED_CHAR_CONVERT, TUnsignedCharConvert.Byte);
     FCommentConvert := IniFile.ReadEnum(IS_CONVERT_OPTIONS, ID_COMMENT_CONVERT, TCommentConvert.KeepAsIs);
     FReservedWordHandling := IniFile.ReadEnum(IS_CONVERT_OPTIONS, ID_RESERVED_WORD_HANDLING, TReservedWordHandling.PrefixAmpersand);
     FTreatDirectivesAsReservedWords := IniFile.ReadBool(IS_CONVERT_OPTIONS, ID_TREAT_DIRECTIVES_AS_RESERVED_WORDS, True);
@@ -526,6 +547,7 @@ begin
 
   FCallConv := TCallConv.Cdecl;
   FCharConvert := TCharConvert.UTF8Char;
+  FUnsignedCharConvert := TUnsignedCharConvert.Byte;
   FCommentConvert := TCommentConvert.KeepAsIs;
   FReservedWordHandling := TReservedWordHandling.PrefixAmpersand;
   FTreatDirectivesAsReservedWords := True;
@@ -591,6 +613,15 @@ begin
   if (Value <> FCharConvert) then
   begin
     FCharConvert := Value;
+    FModified := True;
+  end;
+end;
+
+procedure TProject.SetUnsignedCharConvert(const Value: TUnsignedCharConvert);
+begin
+  if (Value <> FUnsignedCharConvert) then
+  begin
+    FUnsignedCharConvert := Value;
     FModified := True;
   end;
 end;

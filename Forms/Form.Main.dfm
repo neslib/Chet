@@ -521,24 +521,31 @@ object FormMain: TFormMain
       end
       object LabelReservedWordHandling: TLabel
         Left = 6
-        Top = 88
+        Top = 120
         Width = 120
         Height = 13
         Caption = 'Reserved word handling:'
       end
       object LabelUnconvertibleHandling: TLabel
         Left = 6
-        Top = 165
+        Top = 197
         Width = 131
         Height = 13
         Caption = 'Unconvertible declarations:'
       end
       object LabelEnumHandling: TLabel
         Left = 6
-        Top = 138
+        Top = 170
         Width = 73
         Height = 13
         Caption = 'Enum handling:'
+      end
+      object LabelConvertUnsignedChar: TLabel
+        Left = 7
+        Top = 88
+        Width = 134
+        Height = 13
+        Caption = 'Convert "unsigned char" to:'
       end
       object ComboBoxConvertChar: TComboBox
         Left = 148
@@ -588,7 +595,7 @@ object FormMain: TFormMain
       end
       object ComboBoxReservedWordHandling: TComboBox
         Left = 148
-        Top = 85
+        Top = 117
         Width = 280
         Height = 21
         Style = csDropDownList
@@ -603,7 +610,7 @@ object FormMain: TFormMain
       end
       object CheckBoxDirectivesAsReservedWords: TCheckBox
         Left = 6
-        Top = 112
+        Top = 144
         Width = 191
         Height = 17
         Caption = 'Treat directives as reserved words'
@@ -614,7 +621,7 @@ object FormMain: TFormMain
       end
       object ComboBoxUnconvertibleHandling: TComboBox
         Left = 148
-        Top = 162
+        Top = 194
         Width = 280
         Height = 21
         Style = csDropDownList
@@ -629,7 +636,7 @@ object FormMain: TFormMain
       end
       object ComboBoxEnumHandling: TComboBox
         Left = 148
-        Top = 135
+        Top = 167
         Width = 280
         Height = 21
         Style = csDropDownList
@@ -640,6 +647,22 @@ object FormMain: TFormMain
         Items.Strings = (
           'Convert to enumerated type'
           'Convert to integer type and constants')
+      end
+      object ComboBoxConvertUnsignedChar: TComboBox
+        Left = 148
+        Top = 85
+        Width = 280
+        Height = 21
+        Style = csDropDownList
+        ItemIndex = 2
+        TabOrder = 7
+        Text = 'Byte'
+        OnChange = ComboBoxConvertUnsignedCharChange
+        Items.Strings = (
+          'UTF8Char'
+          'Shortint'
+          'Byte'
+          'AnsiString')
       end
     end
     object CardIgnore: TCard
@@ -664,7 +687,7 @@ object FormMain: TFormMain
           'be translated. Enter one symbol per line. Symbols are case-sensi' +
           'tive.'
         WordWrap = True
-        ExplicitLeft = 5
+        ExplicitWidth = 424
       end
       object MemoIgnore: TMemo
         AlignWithMargins = True
