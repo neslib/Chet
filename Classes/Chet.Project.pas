@@ -28,7 +28,10 @@ type
     Shortint,
 
     { Convert to unsigned 8-bit integer }
-    Byte);
+    Byte,
+
+    { Convert to AnsiChar }
+    AnsiChar);
 
   { How to treat documentation comments }
   TCommentConvert = (

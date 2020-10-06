@@ -553,7 +553,8 @@ object FormMain: TFormMain
         Items.Strings = (
           'UTF8Char'
           'Shortint'
-          'Byte')
+          'Byte'
+          'AnsiString')
       end
       object ComboBoxConvertComments: TComboBox
         Left = 148

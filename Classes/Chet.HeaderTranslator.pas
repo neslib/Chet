@@ -760,6 +760,7 @@ begin
   case FProject.CharConvert of
     TCharConvert.UTF8Char: FBuiltinTypes[TTypeKind.Char_S] := 'UTF8Char';
     TCharConvert.Shortint: FBuiltinTypes[TTypeKind.Char_S] := 'Shortint';
+    TCharConvert.AnsiChar: FBuiltinTypes[TTypeKind.Char_S] := 'AnsiChar';
   else
     FBuiltinTypes[TTypeKind.Char_S] := 'Byte';
   end;
@@ -1559,6 +1560,11 @@ begin
     TCharConvert.Shortint:
       begin
         CheckIndirection(['char', 'signed char'], 'Shortint');
+        CheckIndirection(['unsigned char'], 'Byte');
+      end;
+    TCharConvert.AnsiChar:
+      begin
+        CheckIndirection(['char', 'signed char'], 'AnsiChar');
         CheckIndirection(['unsigned char'], 'Byte');
       end
   else
