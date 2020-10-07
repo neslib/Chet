@@ -54,7 +54,6 @@ object FormMain: TFormMain
     ItemIndex = 0
     TabOrder = 1
     OnButtonClicked = ButtonGroupCategoriesButtonClicked
-    ExplicitLeft = -2
   end
   object CardPanel: TCardPanel
     Left = 125
@@ -164,8 +163,6 @@ object FormMain: TFormMain
       Caption = 'Platforms'
       CardIndex = 1
       TabOrder = 4
-      ExplicitLeft = 6
-      ExplicitTop = 2
       object LabelPlatform: TLabel
         Left = 6
         Top = 36
@@ -677,7 +674,7 @@ object FormMain: TFormMain
         AlignWithMargins = True
         Left = 6
         Top = 4
-        Width = 426
+        Width = 424
         Height = 26
         Margins.Left = 6
         Margins.Top = 4
@@ -687,7 +684,6 @@ object FormMain: TFormMain
           'be translated. Enter one symbol per line. Symbols are case-sensi' +
           'tive.'
         WordWrap = True
-        ExplicitWidth = 424
       end
       object MemoIgnore: TMemo
         AlignWithMargins = True
