@@ -757,7 +757,14 @@ begin
     FBuiltinTypes[TTypeKind.Char_U] := 'Byte';
   end;
 
-  FBuiltinTypes[TTypeKind.UChar] := 'Byte';
+  case FProject.UnsignedCharConvert of
+    TUnsignedCharConvert.UTF8Char: FBuiltinTypes[TTypeKind.UChar] := 'UTF8Char';
+    TUnsignedCharConvert.Shortint: FBuiltinTypes[TTypeKind.UChar] := 'Shortint';
+    TUnsignedCharConvert.AnsiChar: FBuiltinTypes[TTypeKind.UChar] := 'AnsiChar';
+  else
+    FBuiltinTypes[TTypeKind.UChar] := 'Byte';
+  end;
+
   FBuiltinTypes[TTypeKind.Char16] := 'WideChar';
   FBuiltinTypes[TTypeKind.Char32] := 'UCS4Char';
   FBuiltinTypes[TTypeKind.UShort] := 'Word';
@@ -773,7 +780,14 @@ begin
     FBuiltinTypes[TTypeKind.Char_S] := 'Byte';
   end;
 
-  FBuiltinTypes[TTypeKind.SChar] := 'Shortint';
+  case FProject.CharConvert of
+    TCharConvert.UTF8Char: FBuiltinTypes[TTypeKind.SChar] := 'UTF8Char';
+    TCharConvert.Shortint: FBuiltinTypes[TTypeKind.SChar] := 'Shortint';
+    TCharConvert.AnsiChar: FBuiltinTypes[TTypeKind.SChar] := 'AnsiChar';
+  else
+    FBuiltinTypes[TTypeKind.SChar] := 'Byte';
+  end;
+
   FBuiltinTypes[TTypeKind.WChar] := 'WideChar';
   FBuiltinTypes[TTypeKind.Short] := 'Smallint';
   FBuiltinTypes[TTypeKind.Int] := 'Integer';
@@ -1562,7 +1576,7 @@ begin
   case FProject.CharConvert of
     TCharConvert.UTF8Char:
       begin
-        CheckIndirection(['char'], 'UTF8Char');
+        CheckIndirection(['char', 'signed char'], 'UTF8Char');
       end;
     TCharConvert.Shortint:
       begin
@@ -1573,7 +1587,7 @@ begin
         CheckIndirection(['char', 'signed char'], 'AnsiChar');
       end
   else
-    CheckIndirection(['char'], 'Byte');
+    CheckIndirection(['char', 'signed char'], 'Byte');
   end;
 
   case FProject.UnsignedCharConvert of
