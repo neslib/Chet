@@ -618,6 +618,7 @@ begin
 
   ComboBoxCallConv.ItemIndex := Ord(FProject.CallConv);
   ComboBoxConvertChar.ItemIndex := Ord(FProject.CharConvert);
+  ComboBoxConvertUnsignedChar.ItemIndex := Ord(FProject.UnsignedCharConvert);
   ComboBoxConvertComments.ItemIndex := Ord(FProject.CommentConvert);
   ComboBoxReservedWordHandling.ItemIndex := Ord(FProject.ReservedWordHandling);
   CheckBoxDirectivesAsReservedWords.Checked := FProject.TreatDirectivesAsReservedWords;

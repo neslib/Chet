@@ -581,6 +581,7 @@ begin
 
     IniFile.WriteEnum(IS_CONVERT_OPTIONS, ID_CALL_CONV, FCallConv);
     IniFile.WriteEnum(IS_CONVERT_OPTIONS, ID_CHAR_CONVERT, FCharConvert);
+    IniFile.WriteEnum(IS_CONVERT_OPTIONS, ID_UNSIGNED_CHAR_CONVERT, FUnsignedCharConvert);
     IniFile.WriteEnum(IS_CONVERT_OPTIONS, ID_COMMENT_CONVERT, FCommentConvert);
     IniFile.WriteEnum(IS_CONVERT_OPTIONS, ID_RESERVED_WORD_HANDLING, FReservedWordHandling);
     IniFile.WriteBool(IS_CONVERT_OPTIONS, ID_TREAT_DIRECTIVES_AS_RESERVED_WORDS, FTreatDirectivesAsReservedWords);
