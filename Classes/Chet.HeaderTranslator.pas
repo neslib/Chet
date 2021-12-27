@@ -1687,6 +1687,8 @@ var
   Name: String;
 begin
   Name := ACursor.Spelling;
+  if (FSymbolsToIgnore.ContainsKey(Name)) then
+    Exit;
 
   FWriter.WriteLn;
 
