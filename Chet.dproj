@@ -129,8 +129,11 @@
         <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <Icon_MainIcon>Chet_Icon.ico</Icon_MainIcon>
-        <AppDPIAwarenessMode>PerMonitor</AppDPIAwarenessMode>
         <Debugger_RunParams>..\Sample\Sample.chet</Debugger_RunParams>
+        <VerInfo_MinorVer>1</VerInfo_MinorVer>
+        <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=1.1.0.43;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=1.1.0.42;Comments=</VerInfo_Keys>
+        <VerInfo_Build>43</VerInfo_Build>
+        <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
     </PropertyGroup>
     <ItemGroup>
         <DelphiCompile Include="$(MainSource)">
@@ -165,19 +168,11 @@
                     <Source Name="MainSource">Chet.dpr</Source>
                 </Source>
                 <Excluded_Packages>
-                    <Excluded_Packages Name="E:\DelphiHtmlEditTrial\XE103\packages\XE103\htmledit_XE103.bpl">HTML Editor Library - VCL package</Excluded_Packages>
-                    <Excluded_Packages Name="E:\DelphiHtmlEditTrial\XE103\packages\XE103\htmleditfm_XE103.bpl">HTML Component Library - FMX package</Excluded_Packages>
-                    <Excluded_Packages Name="$(BDSBIN)\dcloffice2k260.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
-                    <Excluded_Packages Name="$(BDSBIN)\dclofficexp260.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
+                    <Excluded_Packages Name="$(BDSBIN)\dcloffice2k280.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
+                    <Excluded_Packages Name="$(BDSBIN)\dclofficexp280.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
                 </Excluded_Packages>
             </Delphi.Personality>
             <Deployment Version="3">
-                <DeployFile LocalName="Win32\Debug\Chet.exe" Configuration="Debug" Class="ProjectOutput">
-                    <Platform Name="Win32">
-                        <RemoteName>Chet.exe</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
                 <DeployFile LocalName="Bin\Chet.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win64">
                         <RemoteName>Chet.exe</RemoteName>
@@ -186,6 +181,12 @@
                 </DeployFile>
                 <DeployFile LocalName="Bin\Chet.exe" Configuration="Release" Class="ProjectOutput">
                     <Platform Name="Win64">
+                        <RemoteName>Chet.exe</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="Win32\Debug\Chet.exe" Configuration="Debug" Class="ProjectOutput">
+                    <Platform Name="Win32">
                         <RemoteName>Chet.exe</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
