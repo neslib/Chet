@@ -178,6 +178,7 @@ type
     FCommentConvert: TCommentConvert;
     FReservedWordHandling: TReservedWordHandling;
     FTreatDirectivesAsReservedWords: Boolean;
+    FDelayedLoading: Boolean;
     FEnumHandling: TEnumHandling;
     FUnconvertibleHandling: TUnconvertibleHandling;
 
@@ -195,6 +196,7 @@ type
     procedure SetCallConv(const Value: TCallConv);
     procedure SetReservedWordHandling(const Value: TReservedWordHandling);
     procedure SetTreatDirectivesAsReservedWords(const Value: Boolean);
+    procedure SetDelayedLoading(const Value: Boolean);
     procedure SetUnconvertibleHandling(const Value: TUnconvertibleHandling);
     function GetPlatform(const AIndex: TPlatformType): TPlatform;
     procedure SetLibraryConstant(const Value: String);
@@ -317,6 +319,11 @@ type
     { Whether to treat Delphi directives as reserved words as well. }
     property TreatDirectivesAsReservedWords: Boolean read FTreatDirectivesAsReservedWords write SetTreatDirectivesAsReservedWords;
 
+    { Whether to add the "delayed" directive to imported routines to delay to
+      loading of the library containing the routine.
+      Only applicable to Windows. }
+    property DelayedLoading: Boolean read FDelayedLoading write SetDelayedLoading;
+
     { How C enums should be handled. }
     property EnumHandling: TEnumHandling read FEnumHandling write SetEnumHandling;
 
@@ -357,6 +364,7 @@ const // Ini Identifiers
   ID_COMMENT_CONVERT = 'CommentConvert';
   ID_RESERVED_WORD_HANDLING = 'ReservedWordHandling';
   ID_TREAT_DIRECTIVES_AS_RESERVED_WORDS = 'TreatDirectivesAsReservedWords';
+  ID_DELAYED_LOADING = 'DelayedLoading';
   ID_ENUM_HANDLING = 'EnumHandling';
   ID_UNCONVERTIBLE_HANDLING = 'UnconvertibleHandling';
   ID_ENABLED = 'Enabled';
@@ -496,6 +504,7 @@ begin
     FCommentConvert := IniFile.ReadEnum(IS_CONVERT_OPTIONS, ID_COMMENT_CONVERT, TCommentConvert.KeepAsIs);
     FReservedWordHandling := IniFile.ReadEnum(IS_CONVERT_OPTIONS, ID_RESERVED_WORD_HANDLING, TReservedWordHandling.PrefixAmpersand);
     FTreatDirectivesAsReservedWords := IniFile.ReadBool(IS_CONVERT_OPTIONS, ID_TREAT_DIRECTIVES_AS_RESERVED_WORDS, True);
+    FDelayedLoading := IniFile.ReadBool(IS_CONVERT_OPTIONS, ID_DELAYED_LOADING, False);
     FEnumHandling := IniFile.ReadEnum(IS_CONVERT_OPTIONS, ID_ENUM_HANDLING, TEnumHandling.ConvertToEnum);
     FUnconvertibleHandling := IniFile.ReadEnum(IS_CONVERT_OPTIONS, ID_UNCONVERTIBLE_HANDLING, TUnconvertibleHandling.WriteToDo);
 
@@ -585,6 +594,7 @@ begin
     IniFile.WriteEnum(IS_CONVERT_OPTIONS, ID_COMMENT_CONVERT, FCommentConvert);
     IniFile.WriteEnum(IS_CONVERT_OPTIONS, ID_RESERVED_WORD_HANDLING, FReservedWordHandling);
     IniFile.WriteBool(IS_CONVERT_OPTIONS, ID_TREAT_DIRECTIVES_AS_RESERVED_WORDS, FTreatDirectivesAsReservedWords);
+    IniFile.WriteBool(IS_CONVERT_OPTIONS, ID_DELAYED_LOADING, FDelayedLoading);
     IniFile.WriteEnum(IS_CONVERT_OPTIONS, ID_ENUM_HANDLING, FEnumHandling);
     IniFile.WriteEnum(IS_CONVERT_OPTIONS, ID_UNCONVERTIBLE_HANDLING, FUnconvertibleHandling);
 
@@ -632,6 +642,15 @@ begin
   if (Value <> FCommentConvert) then
   begin
     FCommentConvert := Value;
+    FModified := True;
+  end;
+end;
+
+procedure TProject.SetDelayedLoading(const Value: Boolean);
+begin
+  if (Value <> FDelayedLoading) then
+  begin
+    FDelayedLoading := Value;
     FModified := True;
   end;
 end;

@@ -3,7 +3,7 @@ object FormMain: TFormMain
   Top = 0
   Caption = 'Chet - C header translator'
   ClientHeight = 397
-  ClientWidth = 564
+  ClientWidth = 569
   Color = clBtnFace
   Constraints.MinHeight = 380
   Constraints.MinWidth = 580
@@ -13,16 +13,17 @@ object FormMain: TFormMain
   Font.Name = 'Tahoma'
   Font.Style = []
   Menu = MainMenu
-  OldCreateOrder = False
   OnCloseQuery = FormCloseQuery
   PixelsPerInch = 96
   TextHeight = 13
   object StatusBar: TStatusBar
     Left = 0
     Top = 378
-    Width = 564
+    Width = 569
     Height = 19
     Panels = <>
+    ExplicitTop = 369
+    ExplicitWidth = 555
   end
   object ButtonGroupCategories: TButtonGroup
     Left = 0
@@ -54,28 +55,31 @@ object FormMain: TFormMain
     ItemIndex = 0
     TabOrder = 1
     OnButtonClicked = ButtonGroupCategoriesButtonClicked
+    ExplicitHeight = 369
   end
   object CardPanel: TCardPanel
     Left = 125
     Top = 0
-    Width = 439
+    Width = 444
     Height = 378
     Align = alClient
-    ActiveCard = CardPlatforms
+    ActiveCard = CardProject
     BevelOuter = bvNone
     Padding.Left = 4
     Padding.Top = 4
     TabOrder = 2
+    ExplicitWidth = 430
+    ExplicitHeight = 369
     object CardProject: TCard
       Left = 4
       Top = 4
-      Width = 435
+      Width = 440
       Height = 374
       Caption = 'Project'
       CardIndex = 0
       TabOrder = 0
       DesignSize = (
-        435
+        440
         374)
       object LabelHeaderFileDirectory: TLabel
         Left = 2
@@ -101,14 +105,14 @@ object FormMain: TFormMain
       object EditHeaderFileDirectory: TEdit
         Left = 2
         Top = 15
-        Width = 393
+        Width = 384
         Height = 21
         Anchors = [akLeft, akTop, akRight]
         TabOrder = 0
         OnChange = EditHeaderFileDirectoryChange
       end
       object ButtonBrowseHeaderFileDirectory: TButton
-        Left = 398
+        Left = 389
         Top = 14
         Width = 33
         Height = 23
@@ -129,14 +133,14 @@ object FormMain: TFormMain
       object EditPasFile: TEdit
         Left = 2
         Top = 91
-        Width = 393
+        Width = 384
         Height = 21
         Anchors = [akLeft, akTop, akRight]
         TabOrder = 3
         OnChange = EditPasFileChange
       end
       object ButtonBrowsePasFile: TButton
-        Left = 398
+        Left = 389
         Top = 90
         Width = 33
         Height = 23
@@ -148,7 +152,7 @@ object FormMain: TFormMain
       object EditUseUnits: TEdit
         Left = 2
         Top = 135
-        Width = 427
+        Width = 418
         Height = 21
         Anchors = [akLeft, akTop, akRight]
         TabOrder = 5
@@ -158,7 +162,7 @@ object FormMain: TFormMain
     object CardPlatforms: TCard
       Left = 4
       Top = 4
-      Width = 435
+      Width = 440
       Height = 374
       Caption = 'Platforms'
       CardIndex = 1
@@ -424,7 +428,7 @@ object FormMain: TFormMain
     object CardParseOptions: TCard
       Left = 4
       Top = 4
-      Width = 435
+      Width = 440
       Height = 374
       Caption = 'Parse Options'
       CardIndex = 2
@@ -490,11 +494,13 @@ object FormMain: TFormMain
     object CardConversionOptions: TCard
       Left = 4
       Top = 4
-      Width = 435
+      Width = 440
       Height = 374
       Caption = 'Conversion Options'
       CardIndex = 3
       TabOrder = 3
+      ExplicitWidth = 426
+      ExplicitHeight = 365
       object LabelConvertChar: TLabel
         Left = 6
         Top = 61
@@ -661,11 +667,20 @@ object FormMain: TFormMain
           'Byte'
           'AnsiString')
       end
+      object CheckBoxDelayedLoading: TCheckBox
+        Left = 6
+        Top = 221
+        Width = 331
+        Height = 17
+        Caption = 'Add "delayed" directive to imported routines (Windows only)'
+        TabOrder = 8
+        OnClick = CheckBoxDelayedLoadingClick
+      end
     end
     object CardIgnore: TCard
       Left = 4
       Top = 4
-      Width = 435
+      Width = 440
       Height = 374
       Caption = 'Ignore'
       CardIndex = 4
@@ -674,7 +689,7 @@ object FormMain: TFormMain
         AlignWithMargins = True
         Left = 6
         Top = 4
-        Width = 424
+        Width = 431
         Height = 26
         Margins.Left = 6
         Margins.Top = 4
@@ -684,12 +699,13 @@ object FormMain: TFormMain
           'be translated. Enter one symbol per line. Symbols are case-sensi' +
           'tive.'
         WordWrap = True
+        ExplicitWidth = 424
       end
       object MemoIgnore: TMemo
         AlignWithMargins = True
         Left = 4
         Top = 33
-        Width = 427
+        Width = 432
         Height = 337
         Margins.Left = 4
         Margins.Top = 0
@@ -705,7 +721,7 @@ object FormMain: TFormMain
     object CardTranslate: TCard
       Left = 4
       Top = 4
-      Width = 435
+      Width = 440
       Height = 374
       Caption = 'Translate'
       CardIndex = 5
@@ -722,7 +738,7 @@ object FormMain: TFormMain
         AlignWithMargins = True
         Left = 2
         Top = 28
-        Width = 433
+        Width = 438
         Height = 346
         Margins.Left = 2
         Margins.Top = 0

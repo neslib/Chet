@@ -13,6 +13,8 @@ uses
   System.Actions,
   System.UITypes,
   System.IOUtils,
+  System.ImageList,
+  Vcl.ImgList,
   Vcl.Graphics,
   Vcl.Controls,
   Vcl.Forms,
@@ -25,7 +27,7 @@ uses
   Vcl.Menus,
   Vcl.ActnList,
   Chet.Project,
-  Chet.HeaderTranslator, System.ImageList, Vcl.ImgList;
+  Chet.HeaderTranslator;
 
 type
   TFormMain = class(TForm)
@@ -128,6 +130,7 @@ type
     EditPrefixAndroid64: TEdit;
     LabelConvertUnsignedChar: TLabel;
     ComboBoxConvertUnsignedChar: TComboBox;
+    CheckBoxDelayedLoading: TCheckBox;
     procedure ButtonGroupCategoriesButtonClicked(Sender: TObject;
       Index: Integer);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
@@ -162,6 +165,7 @@ type
     procedure EditUseUnitsChange(Sender: TObject);
     procedure MemoIgnoreExit(Sender: TObject);
     procedure ComboBoxConvertUnsignedCharChange(Sender: TObject);
+    procedure CheckBoxDelayedLoadingClick(Sender: TObject);
   private
     { Private declarations }
     FProject: TProject;
@@ -359,6 +363,11 @@ procedure TFormMain.ButtonGroupCategoriesButtonClicked(Sender: TObject;
   Index: Integer);
 begin
   CardPanel.ActiveCardIndex := Index;
+end;
+
+procedure TFormMain.CheckBoxDelayedLoadingClick(Sender: TObject);
+begin
+  FProject.DelayedLoading := CheckBoxDelayedLoading.Checked;
 end;
 
 procedure TFormMain.CheckBoxDirectivesAsReservedWordsClick(Sender: TObject);
@@ -622,6 +631,7 @@ begin
   ComboBoxConvertComments.ItemIndex := Ord(FProject.CommentConvert);
   ComboBoxReservedWordHandling.ItemIndex := Ord(FProject.ReservedWordHandling);
   CheckBoxDirectivesAsReservedWords.Checked := FProject.TreatDirectivesAsReservedWords;
+  CheckBoxDelayedLoading.Checked := FProject.DelayedLoading;
   ComboBoxEnumHandling.ItemIndex := Ord(FProject.EnumHandling);
   ComboBoxUnconvertibleHandling.ItemIndex := Ord(FProject.UnconvertibleHandling);
 

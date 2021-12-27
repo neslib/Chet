@@ -723,6 +723,10 @@ begin
       FWriter.WriteLn('unit %s;', [TPath.GetFileNameWithoutExtension(FProject.TargetPasFile)]);
       WriteIntro;
       FWriter.WriteLn('{$MINENUMSIZE 4}');
+
+      if (FProject.DelayedLoading) then
+        FWriter.WriteLn('{$WARN SYMBOL_PLATFORM OFF}');
+
       FWriter.WriteLn;
       FWriter.WriteLn('interface');
       FWriter.WriteLn;
@@ -1717,8 +1721,13 @@ begin
   FCommentWriter.WriteComment(ACursor);
   WriteFunctionProto(ACursor, ACursor.CursorType, ValidIdentifier(Name));
   FWriter.WriteLn(';');
-  FWriter.WriteLn('  external %s name _PU + ''%s'';',
+  FWriter.Write('  external %s name _PU + ''%s''',
     [FProject.LibraryConstant, Name]);
+
+  if (FProject.DelayedLoading) then
+    FWriter.Write(' {$IFDEF MSWINDOWS}delayed{$ENDIF}');
+
+  FWriter.WriteLn(';');
 end;
 
 procedure THeaderTranslator.WriteFunctionProto(const ACursor: TCursor;
