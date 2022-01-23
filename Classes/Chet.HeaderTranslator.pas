@@ -37,6 +37,15 @@ type
     public
       constructor Create(const ACursor: TCursor);
     end;
+  private type
+    TVarDeclInfo = record
+    public
+      Cursor: TCursor;
+      Visited: Boolean;
+      ConstDecl: Boolean;
+    public
+      constructor Create(const ACursor: TCursor);
+    end;
   private
     FProject: TProject; // Reference
     FCombinedHeaderFilename: String;
@@ -49,6 +58,7 @@ type
     FTypeMap: TDictionary<String, String>;
     FTokenMap: TDictionary<String, String>;
     FMacros: TDictionary<String, TMacroInfo>;
+    FVarDecls: TDictionary<String, TVarDeclInfo>;
     FMaxIndirectionCount: TDictionary<String, Integer>;
     FInvalidConstants: TDictionary<String, Integer>;
     FSymbolsToIgnore: TDictionary<String, Integer>;
@@ -77,7 +87,9 @@ type
     procedure WriteIntro;
     procedure WriteUsesClause;
     procedure WritePlatforms;
+    procedure WriteConstantsRhs(Tokens: TArray<String>; StartIndex, Count : Integer; HasFloatToken : Boolean);
     procedure WriteConstants;
+    procedure WriteConstants2;
     procedure WriteEnumTypes;
     procedure WriteTypes;
     procedure WriteFunctions;
@@ -92,7 +104,8 @@ type
       const ANamePrefix: String = '');
     procedure WriteFunctionProto(const ACursor: TCursor; const AType: TType;
       const AFunctionName: String; const AInStruct: Boolean = False);
-    procedure WriteConstant(const ACursor: TCursor);
+    procedure WriteDefinedConstant(const ACursor: TCursor);
+    procedure WriteTypedConstant(const ACursor: TCursor);
     procedure WriteFunction(const ACursor: TCursor);
     procedure WriteToDo(const AText: String);
     procedure WriteCommentedOutOriginalSource(const ACursor: TCursor);
@@ -104,8 +117,9 @@ type
       const AArgs: array of const); overload;
   private
     function VisitTypes(const ACursor, AParent: TCursor): TChildVisitResult;
-    function VisitConstantsFirstPass(const ACursor, AParent: TCursor): TChildVisitResult;
-    function VisitConstantsSecondPass(const ACursor, AParent: TCursor): TChildVisitResult;
+    function VisitDefinesFirstPass(const ACursor, AParent: TCursor): TChildVisitResult;
+    function VisitDefinesSecondPass(const ACursor, AParent: TCursor): TChildVisitResult;
+    function VisitTypedConstants(const ACursor, AParent: TCursor): TChildVisitResult;
     function VisitFunctions(const ACursor, AParent: TCursor): TChildVisitResult;
   private
     class function RemoveQualifiers(const ACTypeName: String): String; static;
@@ -307,6 +321,7 @@ begin
   FTypeMap := TDictionary<String, String>.Create;
   FTokenMap := TDictionary<String, String>.Create;
   FMacros := TDictionary<String, TMacroInfo>.Create;
+  FVarDecls := TDictionary<String, TVarDeclInfo>.Create;
   FMaxIndirectionCount := TDictionary<String, Integer>.Create;
   FSymbolsToIgnore := TDictionary<String, Integer>.Create;
   FAnonymousTypes := TDictionary<String, Integer>.Create;
@@ -378,6 +393,7 @@ begin
   FDeclaredTypes.Free;
   FTypes.Free;
   FMacros.Free;
+  FVarDecls.Free;
   inherited;
 end;
 
@@ -734,6 +750,7 @@ begin
       WritePlatforms;
       WriteConstants;
       WriteTypes;
+      WriteConstants2;
       WriteFunctions;
       FWriter.WriteLn('implementation');
       FWriter.WriteLn;
@@ -1043,7 +1060,7 @@ begin
   end;
 end;
 
-function THeaderTranslator.VisitConstantsFirstPass(const ACursor,
+function THeaderTranslator.VisitDefinesFirstPass(const ACursor,
   AParent: TCursor): TChildVisitResult;
 begin
   if (ACursor.Kind = TCursorKind.MacroDefinition) then
@@ -1054,11 +1071,21 @@ begin
   Result := TChildVisitResult.Continue;
 end;
 
-function THeaderTranslator.VisitConstantsSecondPass(const ACursor,
+function THeaderTranslator.VisitDefinesSecondPass(const ACursor,
   AParent: TCursor): TChildVisitResult;
 begin
   if (ACursor.Kind = TCursorKind.MacroDefinition) and (not IsSystemCursor(ACursor)) then
-    WriteConstant(ACursor);
+    WriteDefinedConstant(ACursor);
+
+  { Do not recurse. Only handle top-level #defines }
+  Result := TChildVisitResult.Continue;
+end;
+
+function THeaderTranslator.VisitTypedConstants(const ACursor,
+  AParent: TCursor): TChildVisitResult;
+begin
+  if (ACursor.Kind = TCursorKind.VarDecl) and (not IsSystemCursor(ACursor)) then
+    WriteTypedConstant(ACursor);
 
   { Do not recurse. Only handle top-level #defines }
   Result := TChildVisitResult.Continue;
@@ -1143,120 +1170,21 @@ begin
   FWriter.WriteLn(' *)');
 end;
 
-procedure THeaderTranslator.WriteConstant(const ACursor: TCursor);
+{ Write right-hand side expression. This procedure is used by WriteDefinedConstant() and WriteDefinedConstant() }
+procedure THeaderTranslator.WriteConstantsRhs(Tokens: TArray<String>; StartIndex, Count : Integer; HasFloatToken : Boolean);
 const
   SUFFICES: array [0..10] of String = ('i8', 'i16', 'i32', 'i64', 'ui8', 'ui16',
     'ui32', 'ui64', 'u', 'l', 'f');
 var
-  Range: TSourceRange;
-  TokenList: ITokenList;
-  Tokens: TArray<String>;
   S, Conv: String;
   C: Char;
   I, J, MaxSuffix: Integer;
-  Info: TMacroInfo;
-  HasSuffix, HasFloatToken, IsString: Boolean;
+  HasSuffix, IsString: Boolean;
+  StringConcatPlusInserted : Boolean;
 begin
-  Range := ACursor.Extent;
-  if (Range.IsNull) then
-    Exit;
+  StringConcatPlusInserted := False;
 
-  S := ACursor.Spelling;
-  if FMacros.TryGetValue(S, Info) then
-  begin
-    if Info.Visited then
-      Exit;
-  end;
-  Info.Cursor := ACursor;
-  Info.Visited := True;
-  FMacros.AddOrSetValue(S, Info);
-
-  if (ACursor.IsMacroFunctionLike) then
-  begin
-    { This a a #define that looks like a function, as in:
-        #define foo(x) (x < 0) ? -x : x
-      We cannot convert these. }
-    WriteToDo('Unable to convert function-like macro:');
-    FInvalidConstants.AddOrSetValue(ACursor.Spelling, 0);
-    WriteCommentedOutOriginalSource(ACursor);
-    Exit;
-  end;
-
-  { Tokenize the macro (#define) definition. This gives us a list of tokens
-    that make up the definition (including the original macro name). We try to
-    convert these tokens to Delphi. }
-
-  TokenList := FTranslationUnit.Tokenize(Range);
-  if (TokenList = nil) or (TokenList.Count < 2) then
-    Exit;
-
-  { Check any TokenList for symbols we do not support }
-  HasFloatToken := False;
-  SetLength(Tokens, TokenList.Count);
-  for I := 0 to TokenList.Count - 1 do
-  begin
-    S := FTranslationUnit.GetTokenSpelling(TokenList[I]);
-    if (S = '{') or (S = '?') or (S = ',') then
-    begin
-      WriteToDo('Unable to convert macro:');
-      FInvalidConstants.AddOrSetValue(ACursor.Spelling, 0);
-      WriteCommentedOutOriginalSource(ACursor);
-      Exit;
-    end
-    else if (S = '*') and ((I = 0) or (I = (TokenList.Count - 1))) then
-    begin
-      { '*' at begin or end }
-      WriteToDo('Unable to convert macro:');
-      FInvalidConstants.AddOrSetValue(ACursor.Spelling, 0);
-      WriteCommentedOutOriginalSource(ACursor);
-      Exit;
-    end
-    else if (S.StartsWith('__')) then
-    begin
-      WriteToDo(Format('Macro refers to system symbol "%s":', [S]));
-      FInvalidConstants.AddOrSetValue(ACursor.Spelling, 0);
-      WriteCommentedOutOriginalSource(ACursor);
-      Exit;
-    end
-    else if IsMostlyLowerCase(S) then
-    begin
-      WriteToDo(Format('Macro probably uses invalid symbol "%s":', [S]));
-      FInvalidConstants.AddOrSetValue(ACursor.Spelling, 0);
-      WriteCommentedOutOriginalSource(ACursor);
-      Exit;
-    end
-    else if FInvalidConstants.ContainsKey(S) then
-    begin
-      WriteToDo(Format('Macro uses commented-out symbol "%s":', [S]));
-      FInvalidConstants.AddOrSetValue(ACursor.Spelling, 0);
-      WriteCommentedOutOriginalSource(ACursor);
-      Exit;
-    end;
-
-    if FMacros.TryGetValue(S, Info) then
-    begin
-      if (not Info.Visited) then
-        { Write dependent macro first }
-        WriteConstant(Info.Cursor);
-    end;
-
-    if (S.IndexOf('.') >= 0) then
-      HasFloatToken := True;
-    Tokens[I] := S;
-  end;
-
-  if (FSymbolsToIgnore.ContainsKey(Tokens[0])) then
-    Exit;
-
-  { Seems that libclang does not provide comments for #defines. Call WriteComment
-    anyway in case future libclang versions do. }
-  FCommentWriter.WriteComment(ACursor);
-
-  { First token is macro (constant) name }
-  FWriter.Write(Tokens[0]);
-  FWriter.Write(' = ');
-
-  for I := 1 to TokenList.Count - 1 do
+  for I := StartIndex to Count - 1 do
   begin
     S := Tokens[I];
     IsString := False;
@@ -1335,35 +1263,313 @@ begin
       until (not HasSuffix);
     end;
 
+
     if IsString then
     begin
       { In macros, strings can be concatenated like this:
           FOO "str" BAR
         We need to put '+' inbetween }
-      if (I > 1) and (Tokens[I - 1] <> '+') then
-        FWriter.Write('+');
+      if (I > StartIndex) and (Tokens[I - 1] <> '+')
+          and (not StringConcatPlusInserted) // avoid inserting two '+' chars
+      then
+        FWriter.Write(' + ');
 
       FWriter.Write(S);
+      StringConcatPlusInserted := False;
 
-      if (I < (TokenList.Count - 1)) and (Tokens[I + 1] <> '+') then
-        FWriter.Write('+');
+      if (I < (Count - 1)) and (Tokens[I + 1] <> '+') then
+      begin
+        FWriter.Write(' + ');
+        StringConcatPlusInserted := True;
+      end;
     end
     else
+    begin
       FWriter.Write(S);
+      StringConcatPlusInserted := False;
+    end;
   end;
+end;
+
+{ #define aName <Expression> }
+procedure THeaderTranslator.WriteDefinedConstant(const ACursor: TCursor);
+var
+  Range: TSourceRange;
+  TokenList: ITokenList;
+  Tokens: TArray<String>;
+  S: String;
+  I: Integer;
+  Info: TMacroInfo;
+  HasFloatToken: Boolean;
+begin
+  Range := ACursor.Extent;
+  if (Range.IsNull) then
+    Exit;
+
+  S := ACursor.Spelling;
+  if FMacros.TryGetValue(S, Info) then
+  begin
+    if Info.Visited then
+      Exit;
+  end;
+  Info.Cursor := ACursor;
+  Info.Visited := True;
+  FMacros.AddOrSetValue(S, Info);
+
+  if (ACursor.IsMacroFunctionLike) then
+  begin
+    { This is a #define that looks like a function, as in:
+        #define foo(x) (x < 0) ? -x : x
+      We cannot convert these. }
+    WriteToDo('Unable to convert function-like macro:');
+    FInvalidConstants.AddOrSetValue(ACursor.Spelling, 0);
+    WriteCommentedOutOriginalSource(ACursor);
+    Exit;
+  end;
+
+  { Tokenize the macro (#define) definition. This gives us a list of tokens
+    that make up the definition (including the original macro name). We try to
+    convert these tokens to Delphi. }
+
+  TokenList := FTranslationUnit.Tokenize(Range);
+  if (TokenList = nil) or (TokenList.Count < 2) then
+    Exit;
+
+  { Check any TokenList for symbols we do not support }
+  HasFloatToken := False;
+  SetLength(Tokens, TokenList.Count);
+  for I := 0 to TokenList.Count - 1 do
+  begin
+    S := FTranslationUnit.GetTokenSpelling(TokenList[I]);
+    if (S = '{') or (S = '?') or (S = ',') then
+    begin
+      WriteToDo('Unable to convert macro:');
+      FInvalidConstants.AddOrSetValue(ACursor.Spelling, 0);
+      WriteCommentedOutOriginalSource(ACursor);
+      Exit;
+    end
+    else if (S = '*') and ((I = 0) or (I = (TokenList.Count - 1))) then
+    begin
+      { '*' at begin or end }
+      WriteToDo('Unable to convert macro:');
+      FInvalidConstants.AddOrSetValue(ACursor.Spelling, 0);
+      WriteCommentedOutOriginalSource(ACursor);
+      Exit;
+    end
+    else if (S.StartsWith('__')) then
+    begin
+      WriteToDo(Format('Macro refers to system symbol "%s":', [S]));
+      FInvalidConstants.AddOrSetValue(ACursor.Spelling, 0);
+      WriteCommentedOutOriginalSource(ACursor);
+      Exit;
+    end
+    else if IsMostlyLowerCase(S) then
+    begin
+      WriteToDo(Format('Macro probably uses invalid symbol "%s":', [S]));
+      FInvalidConstants.AddOrSetValue(ACursor.Spelling, 0);
+      WriteCommentedOutOriginalSource(ACursor);
+      Exit;
+    end
+    else if FInvalidConstants.ContainsKey(S) then
+    begin
+      WriteToDo(Format('Macro uses commented-out symbol "%s":', [S]));
+      FInvalidConstants.AddOrSetValue(ACursor.Spelling, 0);
+      WriteCommentedOutOriginalSource(ACursor);
+      Exit;
+    end;
+
+    if FMacros.TryGetValue(S, Info) then
+    begin
+      if (not Info.Visited) then
+        { Write dependent macro first }
+        WriteDefinedConstant(Info.Cursor);
+    end;
+
+    if (S.IndexOf('.') >= 0) then
+      HasFloatToken := True;
+    Tokens[I] := S;
+  end;
+
+  if (FSymbolsToIgnore.ContainsKey(Tokens[0])) then
+    Exit;
+
+  { Seems that libclang does not provide comments for #defines. Call WriteComment
+    anyway in case future libclang versions do. }
+  FCommentWriter.WriteComment(ACursor);
+
+  { First token is macro (constant) name }
+  FWriter.Write(Tokens[0]);
+  FWriter.Write(' = ');
+
+  { Write right-hand side. This procedure is also used by WriteTypedConstant() }
+  WriteConstantsRhs(Tokens, 1, TokenList.Count, HasFloatToken);
 
   FWriter.WriteLn(';');
 end;
 
+{ [static] const AType AName = <Expression>; }
+procedure THeaderTranslator.WriteTypedConstant(const ACursor: TCursor);
+type
+  TState = (statConst, statLhs, statRhs, statError);
+var
+  Range: TSourceRange;
+  TokenList: ITokenList;
+  Tokens: TArray<String>;
+  S, SLast: String;
+  I: Integer;
+  Info: TVarDeclInfo;
+  HasFloatToken: Boolean;
+  State : TState;
+  SType, SVarName, Rhs : String;
+  RhsStart : Integer;
+  CursorType : TType;
+  TypeKind : TTypeKind;
+  KindSpelling : String;
+begin
+  Range := ACursor.Extent;
+  if (Range.IsNull) then
+    Exit;
+
+  S := ACursor.Spelling;
+  if FVarDecls.TryGetValue(S, Info) then
+  begin
+    if Info.Visited then
+      Exit;
+  end;
+  Info.Cursor := ACursor;
+  Info.Visited := True;
+  FVarDecls.AddOrSetValue(S, Info);
+
+  CursorType := ACursor.CursorType;
+  TypeKind := CursorType.Kind;
+  KindSpelling := CursorType.KindSpelling;
+
+  { Tokenize the const expression. This gives us a list of tokens
+    that make up the definition (including the original macro name). We try to
+    convert these tokens to Delphi. }
+
+  TokenList := FTranslationUnit.Tokenize(Range);
+  if (TokenList = nil) or (TokenList.Count < 3) then
+    Exit;
+
+  SetLength(Tokens, TokenList.Count);
+  State := statConst;
+  SType := '';
+  SVarName := '';
+  Rhs := '';
+  S := '';
+  SLast := '';
+  RhsStart := 0;
+
+  for I := 0 to TokenList.Count - 1 do
+  begin
+    S := FTranslationUnit.GetTokenSpelling(TokenList[I]);
+    Tokens[i] := S;
+
+    if S = 'static' then
+      Continue; // do nothing, skip
+
+    case State of
+      statConst : if S = 'const' then
+                    State := statLhs
+                  else
+                    Exit;  // not a const expression
+
+      statLhs   : if S = '=' then
+                  begin
+                    SVarName := SLast;
+                    State := statRhs;
+                    RhsStart := I + 1;
+                  end
+                  else
+                  begin
+                    if SType <> '' then
+                      SType := SType + ' ';
+                    SType := SType + SLast;
+                    SLast := S;
+                 end;
+
+      statRhs   : begin
+                    if Rhs <> '' then
+                      Rhs := Rhs + ' ';
+                    Rhs := Rhs + S;
+                  end;
+    end;
+    if State = statError then
+      Break;
+  end;
+
+  if (SVarName = '') or (SType = '') or (Rhs = '') then
+    State := statError;
+
+  if State = statError then
+  begin
+    WriteToDo('Unable to convert const expression:');
+    WriteCommentedOutOriginalSource(ACursor);
+    Exit;
+  end;
+
+
+  if (FSymbolsToIgnore.ContainsKey(SVarName)) then
+    Exit;
+
+  FCommentWriter.WriteComment(ACursor);
+
+  FWriter.Write(SVarName);
+  FWriter.Write(' : ');
+
+  while TypeKind = TTypeKind.Pointer do
+  begin
+    CursorType := CursorType.PointeeType;
+    TypeKind :=  CursorType.Kind;
+    FWriter.Write('P');
+  end;
+
+  if TypeKind = TTypeKind.Typedef then
+    FWriter.Write(SType)  // use type name from C code
+  else if (TypeKind in [Low(FBuiltinTypes) .. High(FBuiltinTypes)]) and (FBuiltinTypes[TypeKind] <> '') then
+    FWriter.Write(FBuiltinTypes[TypeKind])
+  else
+  begin
+    // unrecognized type
+    FWriter.Write(SType);  // use type name from C code
+    WriteTodo('unrecognized type "' + CursorType.KindSpelling + '"');
+  end;
+
+  FWriter.Write(' = ');
+
+  HasFloatToken := (Rhs.IndexOf('.') >= 0);
+
+  { Write right-hand side. This procedure is also used by WriteDefinedConstant() }
+  WriteConstantsRhs(Tokens, RhsStart, TokenList.Count, HasFloatToken);
+  FWriter.WriteLn(';');
+
+end;
+
 procedure THeaderTranslator.WriteConstants;
 begin
-  DoMessage('Writing constants...');
+  DoMessage('Writing constants (#define)...');
   FWriter.StartSection('const');
 
-  FTranslationUnit.Cursor.VisitChildren(VisitConstantsFirstPass);
+  FTranslationUnit.Cursor.VisitChildren(VisitDefinesFirstPass);
   FInvalidConstants := TDictionary<String, Integer>.Create;
   try
-    FTranslationUnit.Cursor.VisitChildren(VisitConstantsSecondPass);
+    FTranslationUnit.Cursor.VisitChildren(VisitDefinesSecondPass);
+  finally
+    FInvalidConstants.Free;
+  end;
+
+  FWriter.EndSection;
+end;
+
+procedure THeaderTranslator.WriteConstants2;
+begin
+  DoMessage('Writing constants (const )...');
+  FWriter.StartSection('const');
+
+  FInvalidConstants := TDictionary<String, Integer>.Create;
+  try
+    FTranslationUnit.Cursor.VisitChildren(VisitTypedConstants);
   finally
     FInvalidConstants.Free;
   end;
@@ -2174,6 +2380,15 @@ constructor THeaderTranslator.TMacroInfo.Create(const ACursor: TCursor);
 begin
   Cursor := ACursor;
   Visited := False;
+end;
+
+{ THeaderTranslator.TVarDeclInfo }
+
+constructor THeaderTranslator.TVarDeclInfo.Create(const ACursor: TCursor);
+begin
+  Cursor    := ACursor;
+  Visited   := False;
+  ConstDecl := False;
 end;
 
 end.
