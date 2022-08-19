@@ -565,7 +565,8 @@ end;
 
 class function THeaderTranslator.IsAnonymous(const AName: String): Boolean;
 begin
-  Result := (AName.IndexOf('(anonymous ') >= 0);
+  { Issue #16: libclang v15 changed the name "anonymous" to "unnamed" }
+  Result := (AName.IndexOf('(anonymous ') >= 0) or (AName.IndexOf('(unnamed ') >= 0);
 end;
 
 class function THeaderTranslator.IsMostlyLowerCase(const AStr: String): Boolean;
