@@ -95,6 +95,7 @@ begin
     FIndent := '';
     FNeedIndent := False;
   end;
+  FSection := '';
 end;
 
 procedure TSourceWriter.Indent;

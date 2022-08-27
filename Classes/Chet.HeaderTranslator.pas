@@ -48,6 +48,7 @@ type
     end;
   private
     FProject: TProject; // Reference
+    FSymbolPrefix: String;
     FCombinedHeaderFilename: String;
     FIndex: IIndex;
     FTranslationUnit: ITranslationUnit;
@@ -63,6 +64,7 @@ type
     FInvalidConstants: TDictionary<String, Integer>;
     FSymbolsToIgnore: TDictionary<String, Integer>;
     FAnonymousTypes: TDictionary<String, Integer>;
+    FWrittenTypeDefs: TDictionary<String, Integer>;
     FWriter: TSourceWriter;
     FCommentWriter: TCommentWriter;
     FBuiltinTypes: array [Low(TTypeKind)..TTypeKind.LongDouble] of String;
@@ -74,10 +76,18 @@ type
     procedure SetupTokenMap;
     procedure SetupSymbolsToIgnore;
     procedure CreateCommentWriter;
+    function Spelling(const ACursor: TCursor): String; overload;
+    function Spelling(const AType: TType): String; overload;
+    function TokenSpelling(const AToken: TToken): String; overload;
+    function MakePointerType(const ATypeName: String;
+      const ACount: Integer = 1): String;
+    function RemoveQualifiers(const ACTypeName: String): String;
     function ValidIdentifier(const AValue: String): String;
     function GetDelphiTypeName(AType: TType; const AInParamDecl: Boolean = False;
-      const AOutIsAnonymous: PBoolean = nil): String;
+      const AOutIsAnonymous: PBoolean = nil; const AOutIsBuiltin: PBoolean = nil): String;
     function GenerateAnonymousTypeName(const AName: String): String;
+    function GenerateProcTypeNameForArg(const AFuncCursor,
+      AArgCursor: TCursor): String;
     function GetArrayTypeName(const AType: TType): String;
     procedure CreateCombinedHeaderFile;
     function ParseCombinedHeaderFile: Boolean;
@@ -122,14 +132,11 @@ type
     function VisitTypedConstants(const ACursor, AParent: TCursor): TChildVisitResult;
     function VisitFunctions(const ACursor, AParent: TCursor): TChildVisitResult;
   private
-    class function RemoveQualifiers(const ACTypeName: String): String; static;
     class function IsSystemCursor(const ACursor: TCursor): Boolean; static;
     class function IsMostlyLowerCase(const AStr: String): Boolean; static;
     class function IsProceduralType(const AType: TType;
       out APointee: TType): Boolean; static;
     class function GetIndirectionCount(var AType: TType): Integer; static;
-    class function GenerateProcTypeNameForArg(const AFuncCursor,
-      AArgCursor: TCursor): String; static;
     class function IsAnonymous(const AName: String): Boolean; static;
     class function ConvertEscapeSequences(const ASource: String): String; static;
   {$ENDREGION 'Internal Declarations'}
@@ -174,11 +181,11 @@ begin
   TypeNames := TDictionary<String, Integer>.Create;
   try
     for Cursor in FTypes do
-      TypeNames.AddOrSetValue(Cursor.Spelling, 0);
+      TypeNames.AddOrSetValue(Spelling(Cursor), 0);
 
     for I := FDeclaredTypes.Count - 1 downto 0 do
     begin
-      if TypeNames.ContainsKey(FDeclaredTypes[I].Spelling) then
+      if TypeNames.ContainsKey(Spelling(FDeclaredTypes[I])) then
         { Type was later defined. Remove it. }
         FDeclaredTypes.Delete(I);
     end;
@@ -187,7 +194,7 @@ begin
     TypeNames.Clear;
     for I := FDeclaredTypes.Count - 1 downto 0 do
     begin
-      S := FDeclaredTypes[I].Spelling;
+      S := Spelling(FDeclaredTypes[I]);
       if TypeNames.ContainsKey(S) then
         FDeclaredTypes.Delete(I)
       else
@@ -301,6 +308,10 @@ begin
   Assert(Assigned(AProject));
   inherited Create;
   FProject := AProject;
+  {$IFDEF EXPERIMENTAL}
+  if (AProject.PrefixSymbolsWithUnderscore) then
+    FSymbolPrefix := '_';
+  {$ENDIF}
   FCombinedHeaderFilename := TPath.Combine(TPath.GetTempPath, '_chet_.h');
   FIndex := TIndex.Create(False, False);
   FTypes := TList<TCursor>.Create;
@@ -325,6 +336,7 @@ begin
   FMaxIndirectionCount := TDictionary<String, Integer>.Create;
   FSymbolsToIgnore := TDictionary<String, Integer>.Create;
   FAnonymousTypes := TDictionary<String, Integer>.Create;
+  FWrittenTypeDefs := TDictionary<String, Integer>.Create;
 
   SetupBuiltinTypes;
   SetupReservedWords;
@@ -383,6 +395,7 @@ end;
 
 destructor THeaderTranslator.Destroy;
 begin
+  FWrittenTypeDefs.Free;
   FAnonymousTypes.Free;
   FSymbolsToIgnore.Free;
   FMaxIndirectionCount.Free;
@@ -461,10 +474,10 @@ begin
   Result := '_anonymous_type_' + I.ToString;
 end;
 
-class function THeaderTranslator.GenerateProcTypeNameForArg(
-  const AFuncCursor, AArgCursor: TCursor): String;
+function THeaderTranslator.GenerateProcTypeNameForArg(const AFuncCursor,
+  AArgCursor: TCursor): String;
 begin
-  Result := AFuncCursor.Spelling + '_' + AArgCursor.Spelling;
+  Result := Spelling(AFuncCursor) + '_' + Spelling(AArgCursor);
 end;
 
 function THeaderTranslator.GetArrayTypeName(const AType: TType): String;
@@ -474,7 +487,8 @@ begin
 end;
 
 function THeaderTranslator.GetDelphiTypeName(AType: TType;
-  const AInParamDecl: Boolean; const AOutIsAnonymous: PBoolean): String;
+  const AInParamDecl: Boolean; const AOutIsAnonymous,
+  AOutIsBuiltin: PBoolean): String;
 var
   OrigType: TType;
   Kind: TTypeKind;
@@ -483,15 +497,25 @@ var
 begin
   if Assigned(AOutIsAnonymous) then
     AOutIsAnonymous^ := False;
+  if Assigned(AOutIsBuiltin) then
+    AOutIsBuiltin^ := False;
 
   OrigType := AType;
   Kind := AType.Kind;
   if (Kind = TTypeKind.ConstantArray) then
   begin
     if (AInParamDecl) then
+    begin
       { Cannot have inline array declarations in a parameter. Treat these as
         pointer type instead. }
-      Exit('P' + GetDelphiTypeName(AType.ArrayElementType))
+      var IsBuiltin: Boolean;
+      Result := GetDelphiTypeName(AType.ArrayElementType, False, nil, @IsBuiltin);
+      if (IsBuiltin) then
+        Result := 'P' + Result
+      else
+        Result := MakePointerType(Result);
+      Exit;
+    end
     else
       Exit(GetArrayTypeName(AType));
   end
@@ -520,11 +544,13 @@ begin
     begin
       if (StarCount > 0) then
         Result := String.Create('P', StarCount) + Result;
+      if Assigned(AOutIsBuiltin) then
+        AOutIsBuiltin^ := True;
       Exit;
     end;
   end;
 
-  Result := RemoveQualifiers(AType.Spelling);
+  Result := RemoveQualifiers(Spelling(AType));
   if IsAnonymous(Result) then
   begin
     Result := GenerateAnonymousTypeName(Result);
@@ -532,8 +558,14 @@ begin
       AOutIsAnonymous^ := True;
   end;
 
+  var SymbolPrefix := FSymbolPrefix;
   if (FTypeMap.TryGetValue(Result, Conv)) then
+  begin
     Result := Conv;
+    SymbolPrefix := '';
+    if Assigned(AOutIsBuiltin) then
+      AOutIsBuiltin^ := True;
+  end;
 
   if (StarCount = 0) then
     Result := ValidIdentifier(Result)
@@ -545,7 +577,12 @@ begin
       Result := String.Create('P', StarCount - 1) + 'Pointer';
   end
   else
-    Result := String.Create('P', StarCount) + Result;
+  begin
+    var SavedSymbolPrefix := FSymbolPrefix;
+    FSymbolPrefix := SymbolPrefix;
+    Result := MakePointerType(Result, StarCount);
+    FSymbolPrefix := SavedSymbolPrefix;
+  end;
 end;
 
 class function THeaderTranslator.GetIndirectionCount(
@@ -624,6 +661,15 @@ begin
   Result := Loc.IsInSystemHeader;
 end;
 
+function THeaderTranslator.MakePointerType(const ATypeName: String;
+  const ACount: Integer): String;
+begin
+  if (FSymbolPrefix = '') or (not ATypeName.StartsWith('_')) then
+    Result := String.Create('P', ACount) + ATypeName
+  else
+    Result := FSymbolPrefix + String.Create('P', ACount) + ATypeName.Substring(1);
+end;
+
 function THeaderTranslator.ParseCombinedHeaderFile: Boolean;
 var
   Args: TArray<String>;
@@ -672,13 +718,23 @@ begin
   end;
 end;
 
-class function THeaderTranslator.RemoveQualifiers(
-  const ACTypeName: String): String;
+function THeaderTranslator.RemoveQualifiers(const ACTypeName: String): String;
 var
   HasPrefix: Boolean;
 begin
-  { Remove leading "struct", "const" or "volatile" }
   Result := ACTypeName;
+
+  {$IFDEF EXPERIMENTAL}
+  var StartsWithUnderscore := False;
+  if (FProject.PrefixSymbolsWithUnderscore) then
+  begin
+    StartsWithUnderscore := Result.StartsWith('_');
+    if (StartsWithUnderscore) then
+      Result := Result.Substring(1);
+  end;
+  {$ENDIF}
+
+  { Remove leading "struct", "const" or "volatile" }
   repeat
     HasPrefix := False;
 
@@ -712,6 +768,11 @@ begin
       HasPrefix := True;
     end;
   until (not HasPrefix);
+
+  {$IFDEF EXPERIMENTAL}
+  if (StartsWithUnderscore) then
+    Result := '_' + Result;
+  {$ENDIF}
 end;
 
 procedure THeaderTranslator.Run;
@@ -1025,6 +1086,27 @@ begin
   FTypeMap.Add('FILE', 'Pointer');
 end;
 
+function THeaderTranslator.Spelling(const AType: TType): String;
+begin
+  Result := AType.Spelling;
+  if (Result <> '') and (not FTypeMap.ContainsKey(Result)) then
+    Result := FSymbolPrefix + Result;
+end;
+
+function THeaderTranslator.Spelling(const ACursor: TCursor): String;
+begin
+  Result := ACursor.Spelling;
+  if (Result <> '') then
+    Result := FSymbolPrefix + Result;
+end;
+
+function THeaderTranslator.TokenSpelling(const AToken: TToken): String;
+begin
+  Result := FTranslationUnit.GetTokenSpelling(AToken);
+  if (AToken.Kind = TTokenKind.Identifier) and (Result <> '') then
+    Result := FSymbolPrefix + Result;
+end;
+
 procedure THeaderTranslator.TrackIndirections(const AType: TType);
 var
   T: TType;
@@ -1037,7 +1119,7 @@ begin
   begin
     { This is a pointer-to-a-pointer(to-a-pointer*) type. We need to create
       additional forward declarations for there, so keep track of them. }
-    TypeName := RemoveQualifiers(T.Spelling);
+    TypeName := RemoveQualifiers(Spelling(T));
     if (FMaxIndirectionCount.TryGetValue(TypeName, MaxIndirectionCount)) then
     begin
       if (IndirectionCount > MaxIndirectionCount) then
@@ -1066,7 +1148,7 @@ function THeaderTranslator.VisitDefinesFirstPass(const ACursor,
 begin
   if (ACursor.Kind = TCursorKind.MacroDefinition) then
     { Record all #defines first, so we can reorder later based on dependencies }
-    FMacros.AddOrSetValue(ACursor.Spelling, TMacroInfo.Create(ACursor));
+    FMacros.AddOrSetValue(Spelling(ACursor), TMacroInfo.Create(ACursor));
 
   { Do not recurse. Only handle top-level #defines }
   Result := TChildVisitResult.Continue;
@@ -1164,7 +1246,7 @@ begin
   FWriter.Write('(*');
   for I := 0 to Tokens.Count - 1 do
   begin
-    S := FTranslationUnit.GetTokenSpelling(Tokens[I]);
+    S := TokenSpelling(Tokens[I]);
     FWriter.Write(' ');
     FWriter.Write(S);
   end;
@@ -1307,7 +1389,7 @@ begin
   if (Range.IsNull) then
     Exit;
 
-  S := ACursor.Spelling;
+  S := Spelling(ACursor);
   if FMacros.TryGetValue(S, Info) then
   begin
     if Info.Visited then
@@ -1323,7 +1405,7 @@ begin
         #define foo(x) (x < 0) ? -x : x
       We cannot convert these. }
     WriteToDo('Unable to convert function-like macro:');
-    FInvalidConstants.AddOrSetValue(ACursor.Spelling, 0);
+    FInvalidConstants.AddOrSetValue(Spelling(ACursor), 0);
     WriteCommentedOutOriginalSource(ACursor);
     Exit;
   end;
@@ -1341,11 +1423,11 @@ begin
   SetLength(Tokens, TokenList.Count);
   for I := 0 to TokenList.Count - 1 do
   begin
-    S := FTranslationUnit.GetTokenSpelling(TokenList[I]);
+    S := TokenSpelling(TokenList[I]);
     if (S = '{') or (S = '?') or (S = ',') then
     begin
       WriteToDo('Unable to convert macro:');
-      FInvalidConstants.AddOrSetValue(ACursor.Spelling, 0);
+      FInvalidConstants.AddOrSetValue(Spelling(ACursor), 0);
       WriteCommentedOutOriginalSource(ACursor);
       Exit;
     end
@@ -1353,28 +1435,28 @@ begin
     begin
       { '*' at begin or end }
       WriteToDo('Unable to convert macro:');
-      FInvalidConstants.AddOrSetValue(ACursor.Spelling, 0);
+      FInvalidConstants.AddOrSetValue(Spelling(ACursor), 0);
       WriteCommentedOutOriginalSource(ACursor);
       Exit;
     end
     else if (S.StartsWith('__')) then
     begin
       WriteToDo(Format('Macro refers to system symbol "%s":', [S]));
-      FInvalidConstants.AddOrSetValue(ACursor.Spelling, 0);
+      FInvalidConstants.AddOrSetValue(Spelling(ACursor), 0);
       WriteCommentedOutOriginalSource(ACursor);
       Exit;
     end
     else if IsMostlyLowerCase(S) then
     begin
       WriteToDo(Format('Macro probably uses invalid symbol "%s":', [S]));
-      FInvalidConstants.AddOrSetValue(ACursor.Spelling, 0);
+      FInvalidConstants.AddOrSetValue(Spelling(ACursor), 0);
       WriteCommentedOutOriginalSource(ACursor);
       Exit;
     end
     else if FInvalidConstants.ContainsKey(S) then
     begin
       WriteToDo(Format('Macro uses commented-out symbol "%s":', [S]));
-      FInvalidConstants.AddOrSetValue(ACursor.Spelling, 0);
+      FInvalidConstants.AddOrSetValue(Spelling(ACursor), 0);
       WriteCommentedOutOriginalSource(ACursor);
       Exit;
     end;
@@ -1431,7 +1513,7 @@ begin
   if (Range.IsNull) then
     Exit;
 
-  S := ACursor.Spelling;
+  S := Spelling(ACursor);
   if FVarDecls.TryGetValue(S, Info) then
   begin
     if Info.Visited then
@@ -1464,7 +1546,7 @@ begin
 
   for I := 0 to TokenList.Count - 1 do
   begin
-    S := FTranslationUnit.GetTokenSpelling(TokenList[I]);
+    S := TokenSpelling(TokenList[I]);
     Tokens[i] := S;
 
     if S = 'static' then
@@ -1594,68 +1676,71 @@ procedure THeaderTranslator.WriteEnumTypeConst(const ACursor: TCursor);
 var
   T: TType;
   TypeName: String;
-  IsUnsigned: Boolean;
+  IsUnsigned, IsAnonymous: Boolean;
 begin
   T := ACursor.CursorType;
-  TypeName := GetDelphiTypeName(T);
+  TypeName := GetDelphiTypeName(T, False, @IsAnonymous);
 
-  FWriter.StartSection('type');
-  FWriter.Write('%s = ', [TypeName]);
+  if (not IsAnonymous) then
+  begin
+    FWriter.StartSection('type');
+    FWriter.Write('%s = ', [TypeName]);
 
-  T := ACursor.EnumDeclIntegerType;
-  IsUnsigned := False;
-  case T.Kind of
-    TTypeKind.Char_U,
-    TTypeKind.UChar:
-      begin
-        FWriter.WriteLn('Byte;');
-        IsUnsigned := True;
-      end;
+    T := ACursor.EnumDeclIntegerType;
+    IsUnsigned := False;
+    case T.Kind of
+      TTypeKind.Char_U,
+      TTypeKind.UChar:
+        begin
+          FWriter.WriteLn('Byte;');
+          IsUnsigned := True;
+        end;
 
-    TTypeKind.UShort:
-      begin
-        FWriter.WriteLn('Word;');
-        IsUnsigned := True;
-      end;
+      TTypeKind.UShort:
+        begin
+          FWriter.WriteLn('Word;');
+          IsUnsigned := True;
+        end;
 
-    TTypeKind.UInt,
-    TTypeKind.ULong:
-      begin
-        FWriter.WriteLn('Cardinal;');
-        IsUnsigned := True;
-      end;
+      TTypeKind.UInt,
+      TTypeKind.ULong:
+        begin
+          FWriter.WriteLn('Cardinal;');
+          IsUnsigned := True;
+        end;
 
-    TTypeKind.ULongLong:
-      begin
-        FWriter.WriteLn('UInt64;');
-        IsUnsigned := True;
-      end;
+      TTypeKind.ULongLong:
+        begin
+          FWriter.WriteLn('UInt64;');
+          IsUnsigned := True;
+        end;
 
-    TTypeKind.Char_S,
-    TTypeKind.SChar:
-      FWriter.WriteLn('Shortint;');
+      TTypeKind.Char_S,
+      TTypeKind.SChar:
+        FWriter.WriteLn('Shortint;');
 
-    TTypeKind.Short:
-      FWriter.WriteLn('Smallint;');
+      TTypeKind.Short:
+        FWriter.WriteLn('Smallint;');
 
-    TTypeKind.Int,
-    TTypeKind.Long:
+      TTypeKind.Int,
+      TTypeKind.Long:
+        FWriter.WriteLn('Integer;');
+
+      TTypeKind.LongLong:
+        FWriter.WriteLn('Int64;');
+    else
       FWriter.WriteLn('Integer;');
-
-    TTypeKind.LongLong:
-      FWriter.WriteLn('Int64;');
-  else
-    FWriter.WriteLn('Integer;');
+    end;
+    FWriter.WriteLn('%s = ^%s;', [MakePointerType(TypeName), TypeName]);
+    FWriter.EndSection;
   end;
-  FWriter.WriteLn('P%s = ^%0:s;', [TypeName]);
-  FWriter.EndSection;
 
   FWriter.StartSection('const');
   ACursor.VisitChildren(
     function(const ACursor, AParent: TCursor): TChildVisitResult
     begin
       FCommentWriter.WriteComment(ACursor);
-      FWriter.Write('%s = ', [ACursor.Spelling]);
+      FWriter.Write('%s = ', [Spelling(ACursor)]);
       if IsUnsigned then
         FWriter.Write(UIntToStr(ACursor.EnumConstantDeclUnsignedValue))
       else
@@ -1697,7 +1782,7 @@ begin
         FWriter.WriteLn(',');
 
       FCommentWriter.WriteComment(ACursor);
-      FWriter.Write('%s = ', [ACursor.Spelling]);
+      FWriter.Write('%s = ', [Spelling(ACursor)]);
       if IsUnsigned then
         FWriter.Write(UIntToStr(ACursor.EnumConstantDeclUnsignedValue))
       else
@@ -1713,7 +1798,7 @@ begin
 
   FWriter.WriteLn(');');
   FWriter.Outdent;
-  FWriter.WriteLn('P%s = ^%0:s;', [TypeName]);
+  FWriter.WriteLn('%s = ^%s;', [MakePointerType(TypeName), TypeName]);
 end;
 
 procedure THeaderTranslator.WriteEnumTypes;
@@ -1757,7 +1842,7 @@ var
     MaxIndirectionCount := 0;
     for CName in ACNames do
     begin
-      if (FMaxIndirectionCount.TryGetValue(CName, IndirectionCount)) then
+      if (FMaxIndirectionCount.TryGetValue(FSymbolPrefix + CName, IndirectionCount)) then
       begin
         if (IndirectionCount > MaxIndirectionCount) then
           MaxIndirectionCount := IndirectionCount;
@@ -1828,8 +1913,11 @@ begin
   CheckIndirection(['double'], 'Double');
   CheckIndirection(['long double'], 'Extended');
 
+  var SavedSymbolPrefix := FSymbolPrefix;
+  FSymbolPrefix := '';
   for P in FTypeMap do
     CheckIndirection([P.Key], P.Value, 1);
+  FSymbolPrefix := SavedSymbolPrefix;
 
   { Check any types that were declared, but not defined, as in:
       struct Foo;
@@ -1837,12 +1925,12 @@ begin
     types. }
   for Cursor in FDeclaredTypes do
   begin
-    S := Cursor.Spelling;
+    S := Spelling(Cursor);
     if (S <> '') and (not FSymbolsToIgnore.ContainsKey(S)) then
     begin
       CheckFirst;
-      FWriter.WriteLn('P%s = Pointer;', [S]);
-      FWriter.WriteLn('PP%s = ^P%0:s;', [S]);
+      FWriter.WriteLn('%s = Pointer;', [MakePointerType(S)]);
+      FWriter.WriteLn('%s = ^%s;', [MakePointerType(S, 2), MakePointerType(S)]);
     end;
   end;
 
@@ -1851,7 +1939,7 @@ begin
     case Cursor.Kind of
       TCursorKind.StructDecl:
         begin
-          S := Cursor.Spelling;
+          S := Spelling(Cursor);
           if (S = '') then
           begin
             (*For typedef structs without a name:
@@ -1859,7 +1947,7 @@ begin
                 typedef struct {...} Alias;
 
               The spelling will be empty. Use the type name.*)
-            S := Cursor.CursorType.Spelling;
+            S := Spelling(Cursor.CursorType);
             if (IsAnonymous(S)) then
               S := ''
             else
@@ -1869,16 +1957,13 @@ begin
           if (S <> '') and (not FSymbolsToIgnore.ContainsKey(S)) then
           begin
             CheckFirst;
-            FWriter.WriteLn('P%s = ^%0:s;', [S]);
+            FWriter.WriteLn('%s = ^%s;', [MakePointerType(S), S]);
 
             { Check if we need additional pointer-to-pointer declarations }
             if (FMaxIndirectionCount.TryGetValue(S, IndirectionCount)) then
             begin
               for I := 2 to IndirectionCount do
-              begin
-                S := 'P' + S;
-                FWriter.WriteLn('P%s = ^%0:s;', [S]);
-              end;
+                FWriter.WriteLn('%s = ^%s;', [MakePointerType(S, I), MakePointerType(S, I - 1)]);
             end;
           end;
         end;
@@ -1893,7 +1978,7 @@ var
   FuncCursor: TCursor;
   Name: String;
 begin
-  Name := ACursor.Spelling;
+  Name := Spelling(ACursor);
   if (FSymbolsToIgnore.ContainsKey(Name)) then
     Exit;
 
@@ -1929,9 +2014,13 @@ begin
 
   FCommentWriter.WriteComment(ACursor);
   WriteFunctionProto(ACursor, ACursor.CursorType, ValidIdentifier(Name));
+  {$IFDEF EXPERIMENTAL}
+  if (FProject.PrefixSymbolsWithUnderscore) then
+    Name := Name.Substring(1);
+  {$ENDIF}
   FWriter.WriteLn(';');
-  FWriter.Write('  external %s name _PU + ''%s''',
-    [FProject.LibraryConstant, Name]);
+  FWriter.Write('  external %s%s name _PU + ''%s''',
+    [FSymbolPrefix, FProject.LibraryConstant, Name]);
 
   if (FProject.DelayedLoading) then
     FWriter.Write(' {$IFDEF MSWINDOWS}delayed{$ENDIF}');
@@ -2064,7 +2153,7 @@ begin
       if (ADelphiTypeName = 'UTF8Char') then
         FWriter.WriteLn('P%s = PUTF8Char;', [ATypeName])
       else
-        FWriter.WriteLn('P%s = ^%s;', [ATypeName, ValidIdentifier(ATypeName)]);
+        FWriter.WriteLn('%s = ^%s;', [MakePointerType(ATypeName), ValidIdentifier(ATypeName)]);
 
       for I := 1 to IndirectionCount - 1 do
       begin
@@ -2113,7 +2202,7 @@ begin
 
       FWriter.WriteLn(')}');
 
-      FWriter.WriteLn('%s = ''%s'';', [FProject.LibraryConstant, P.LibraryName]);
+      FWriter.WriteLn('%s%s = ''%s'';', [FSymbolPrefix, FProject.LibraryConstant, P.LibraryName]);
       FWriter.WriteLn('_PU = ''%s'';', [P.Prefix]);
     end;
   end;
@@ -2130,7 +2219,7 @@ procedure THeaderTranslator.WriteProceduralType(const ACursor: TCursor;
 begin
   FWriter.WriteLn;
   FCommentWriter.WriteComment(ACursor);
-  FWriter.Write('%s%s = ', [ANamePrefix, ValidIdentifier(ACursor.Spelling)]);
+  FWriter.Write('%s%s = ', [ANamePrefix, ValidIdentifier(Spelling(ACursor))]);
   WriteFunctionProto(ACursor, AType, '');
   FWriter.WriteLn(';');
 end;
@@ -2207,7 +2296,7 @@ end;
 
 procedure THeaderTranslator.WriteType(const ACursor: TCursor);
 begin
-  if FSymbolsToIgnore.ContainsKey(ACursor.Spelling) then
+  if FSymbolsToIgnore.ContainsKey(Spelling(ACursor)) then
     Exit;
 
   case ACursor.Kind of
@@ -2271,11 +2360,15 @@ begin
   begin
     { This is a procedural type }
     WriteProceduralType(ACursor, Pointee);
-    WriteIndirections(ACursor.Spelling);
+    WriteIndirections(Spelling(ACursor));
     Exit;
   end;
 
-  DstName := ACursor.Spelling;
+  DstName := Spelling(ACursor);
+  if FWrittenTypeDefs.ContainsKey(DstName) then
+    Exit;
+
+  FWrittenTypeDefs.Add(DstName, 0);
 
   { Check for "opaque" types, as in:
       typedef struct _Foo Foo;
@@ -2284,8 +2377,8 @@ begin
   CanonType := T.CanonicalType;
   if (CanonType.Kind = TTypeKind.Rec) and (not CanonType.IsPodType) then
   begin
-    FWriter.WriteLn('P%s = Pointer;', [DstName]);
-    FWriter.WriteLn('PP%s = ^P%0:s;', [DstName]);
+    FWriter.WriteLn('%s = Pointer;', [MakePointerType(DstName)]);
+    FWriter.WriteLn('%s = ^%s;', [MakePointerType(DstName, 2), MakePointerType(DstName)]);
     Exit;
   end;
 

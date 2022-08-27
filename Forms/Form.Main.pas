@@ -131,6 +131,7 @@ type
     LabelConvertUnsignedChar: TLabel;
     ComboBoxConvertUnsignedChar: TComboBox;
     CheckBoxDelayedLoading: TCheckBox;
+    CheckBoxPrefixSymbolsWithUnderscore: TCheckBox;
     procedure ButtonGroupCategoriesButtonClicked(Sender: TObject;
       Index: Integer);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
@@ -166,6 +167,7 @@ type
     procedure MemoIgnoreExit(Sender: TObject);
     procedure ComboBoxConvertUnsignedCharChange(Sender: TObject);
     procedure CheckBoxDelayedLoadingClick(Sender: TObject);
+    procedure CheckBoxPrefixSymbolsWithUnderscoreClick(Sender: TObject);
   private
     { Private declarations }
     FProject: TProject;
@@ -396,6 +398,13 @@ begin
   UpdatePlatformControls(PT);
 end;
 
+procedure TFormMain.CheckBoxPrefixSymbolsWithUnderscoreClick(Sender: TObject);
+begin
+  {$IFDEF EXPERIMENTAL}
+  FProject.PrefixSymbolsWithUnderscore := CheckBoxPrefixSymbolsWithUnderscore.Checked;
+  {$ENDIF}
+end;
+
 function TFormMain.CheckSave: Boolean;
 begin
   if (not FProject.Modified) then
@@ -475,6 +484,9 @@ begin
   inherited;
   {$IFDEF DEBUG}
   ReportMemoryLeaksOnShutdown := True;
+  {$ENDIF}
+  {$IFDEF EXPERIMENTAL}
+  CheckBoxPrefixSymbolsWithUnderscore.Visible := True;
   {$ENDIF}
   FProject := TProject.Create;
   CardPanel.ActiveCardIndex := 0;
@@ -631,6 +643,9 @@ begin
   ComboBoxConvertComments.ItemIndex := Ord(FProject.CommentConvert);
   ComboBoxReservedWordHandling.ItemIndex := Ord(FProject.ReservedWordHandling);
   CheckBoxDirectivesAsReservedWords.Checked := FProject.TreatDirectivesAsReservedWords;
+  {$IFDEF EXPERIMENTAL}
+  CheckBoxPrefixSymbolsWithUnderscore.Checked := FProject.PrefixSymbolsWithUnderscore;
+  {$ENDIF}
   CheckBoxDelayedLoading.Checked := FProject.DelayedLoading;
   ComboBoxEnumHandling.ItemIndex := Ord(FProject.EnumHandling);
   ComboBoxUnconvertibleHandling.ItemIndex := Ord(FProject.UnconvertibleHandling);

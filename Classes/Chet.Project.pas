@@ -177,6 +177,9 @@ type
     FUnsignedCharConvert: TUnsignedCharConvert;
     FCommentConvert: TCommentConvert;
     FReservedWordHandling: TReservedWordHandling;
+    {$IFDEF EXPERIMENTAL}
+    FPrefixSymbolsWithUnderscore: Boolean;
+    {$ENDIF}
     FTreatDirectivesAsReservedWords: Boolean;
     FDelayedLoading: Boolean;
     FEnumHandling: TEnumHandling;
@@ -196,6 +199,9 @@ type
     procedure SetCallConv(const Value: TCallConv);
     procedure SetReservedWordHandling(const Value: TReservedWordHandling);
     procedure SetTreatDirectivesAsReservedWords(const Value: Boolean);
+    {$IFDEF EXPERIMENTAL}
+    procedure SetPrefixSymbolsWithUnderscore(const Value: Boolean);
+    {$ENDIF}
     procedure SetDelayedLoading(const Value: Boolean);
     procedure SetUnconvertibleHandling(const Value: TUnconvertibleHandling);
     function GetPlatform(const AIndex: TPlatformType): TPlatform;
@@ -319,6 +325,13 @@ type
     { Whether to treat Delphi directives as reserved words as well. }
     property TreatDirectivesAsReservedWords: Boolean read FTreatDirectivesAsReservedWords write SetTreatDirectivesAsReservedWords;
 
+    {$IFDEF EXPERIMENTAL}
+    { Whether to prefix all symbols in the resulting Pascal file with an
+      underscore. This is useful if you wrap the C API's into a Delphi class
+      structure and want to discourage the use of the C API's directory. }
+    property PrefixSymbolsWithUnderscore: Boolean read FPrefixSymbolsWithUnderscore write SetPrefixSymbolsWithUnderscore;
+    {$ENDIF}
+
     { Whether to add the "delayed" directive to imported routines to delay to
       loading of the library containing the routine.
       Only applicable to Windows. }
@@ -364,6 +377,9 @@ const // Ini Identifiers
   ID_COMMENT_CONVERT = 'CommentConvert';
   ID_RESERVED_WORD_HANDLING = 'ReservedWordHandling';
   ID_TREAT_DIRECTIVES_AS_RESERVED_WORDS = 'TreatDirectivesAsReservedWords';
+  {$IFDEF EXPERIMENTAL}
+  ID_PREFIX_SYMBOLS_WITH_UNDERSCORE = 'PrefixSymbolsWithUnderscore';
+  {$ENDIF}
   ID_DELAYED_LOADING = 'DelayedLoading';
   ID_ENUM_HANDLING = 'EnumHandling';
   ID_UNCONVERTIBLE_HANDLING = 'UnconvertibleHandling';
@@ -504,6 +520,9 @@ begin
     FCommentConvert := IniFile.ReadEnum(IS_CONVERT_OPTIONS, ID_COMMENT_CONVERT, TCommentConvert.KeepAsIs);
     FReservedWordHandling := IniFile.ReadEnum(IS_CONVERT_OPTIONS, ID_RESERVED_WORD_HANDLING, TReservedWordHandling.PrefixAmpersand);
     FTreatDirectivesAsReservedWords := IniFile.ReadBool(IS_CONVERT_OPTIONS, ID_TREAT_DIRECTIVES_AS_RESERVED_WORDS, True);
+    {$IFDEF EXPERIMENTAL}
+    FPrefixSymbolsWithUnderscore := IniFile.ReadBool(IS_CONVERT_OPTIONS, ID_PREFIX_SYMBOLS_WITH_UNDERSCORE, False);
+    {$ENDIF}
     FDelayedLoading := IniFile.ReadBool(IS_CONVERT_OPTIONS, ID_DELAYED_LOADING, False);
     FEnumHandling := IniFile.ReadEnum(IS_CONVERT_OPTIONS, ID_ENUM_HANDLING, TEnumHandling.ConvertToEnum);
     FUnconvertibleHandling := IniFile.ReadEnum(IS_CONVERT_OPTIONS, ID_UNCONVERTIBLE_HANDLING, TUnconvertibleHandling.WriteToDo);
@@ -594,6 +613,9 @@ begin
     IniFile.WriteEnum(IS_CONVERT_OPTIONS, ID_COMMENT_CONVERT, FCommentConvert);
     IniFile.WriteEnum(IS_CONVERT_OPTIONS, ID_RESERVED_WORD_HANDLING, FReservedWordHandling);
     IniFile.WriteBool(IS_CONVERT_OPTIONS, ID_TREAT_DIRECTIVES_AS_RESERVED_WORDS, FTreatDirectivesAsReservedWords);
+    {$IFDEF EXPERIMENTAL}
+    IniFile.WriteBool(IS_CONVERT_OPTIONS, ID_PREFIX_SYMBOLS_WITH_UNDERSCORE, FPrefixSymbolsWithUnderscore);
+    {$ENDIF}
     IniFile.WriteBool(IS_CONVERT_OPTIONS, ID_DELAYED_LOADING, FDelayedLoading);
     IniFile.WriteEnum(IS_CONVERT_OPTIONS, ID_ENUM_HANDLING, FEnumHandling);
     IniFile.WriteEnum(IS_CONVERT_OPTIONS, ID_UNCONVERTIBLE_HANDLING, FUnconvertibleHandling);
@@ -705,6 +727,17 @@ begin
     FModified := True;
   end;
 end;
+
+{$IFDEF EXPERIMENTAL}
+procedure TProject.SetPrefixSymbolsWithUnderscore(const Value: Boolean);
+begin
+  if (Value <> FPrefixSymbolsWithUnderscore) then
+  begin
+    FPrefixSymbolsWithUnderscore := Value;
+    FModified := True;
+  end;
+end;
+{$ENDIF}
 
 procedure TProject.SetReservedWordHandling(const Value: TReservedWordHandling);
 begin
