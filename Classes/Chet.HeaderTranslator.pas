@@ -137,6 +137,7 @@ type
     class function IsProceduralType(const AType: TType;
       out APointee: TType): Boolean; static;
     class function GetIndirectionCount(var AType: TType): Integer; static;
+    class function Is8or16ByteStruct(const AType: TType): Boolean; static;
     class function IsAnonymous(const AName: String): Boolean; static;
     class function ConvertEscapeSequences(const ASource: String): String; static;
   {$ENDREGION 'Internal Declarations'}
@@ -598,6 +599,14 @@ begin
     T := T.PointeeType;
   end;
   AType := T;
+end;
+
+class function THeaderTranslator.Is8or16ByteStruct(const AType: TType): Boolean;
+begin
+  if (AType.SizeOf <> 8) and (AType.SizeOf <> 16) then
+    Exit(False);
+
+  Result := (AType.CanonicalType.Kind = TTypeKind.Rec);
 end;
 
 class function THeaderTranslator.IsAnonymous(const AName: String): Boolean;
@@ -2078,7 +2087,11 @@ begin
         CursorType := ACursor.CursorType;
         IsProcType := IsProceduralType(CursorType, PointeeType);
 
-        if (CursorType.IsConstQualified) or (PointeeType.IsConstQualified) then
+        if ((CursorType.IsConstQualified) or (PointeeType.IsConstQualified))
+          { Don't add "const" for types that are 8 or 16 bytes in size (like
+            TPointF and TRectF), since Delphi passes these differently. }
+          and (not Is8or16ByteStruct(CursorType))
+        then
           { Issue #2 (https://github.com/neslib/Chet/issues/2):
             Add support for const parameters. }
           FWriter.Write('const ');
@@ -2174,7 +2187,7 @@ end;
 procedure THeaderTranslator.WritePlatforms;
 const
   PLATFORM_DEFINES: array [TPlatformType] of String = (
-    'WIN32', 'WIN64', 'MACOS32', 'MACOS64', 'LINUX', 'IOS', 'ANDROID32', 'ANDROID64');
+    'WIN32', 'WIN64', 'MACOS64', 'MACOS64', 'LINUX', 'IOS', 'ANDROID32', 'ANDROID64');
 var
   First: Boolean;
   PT: TPlatformType;
@@ -2197,8 +2210,10 @@ begin
         FWriter.Write('{$ELSEIF Defined(');
 
       FWriter.Write(PLATFORM_DEFINES[PT]);
-      if (PT in [TPlatformType.Mac32, TPlatformType.Mac64]) then
-        FWriter.Write(') and not Defined(IOS');
+      if (PT = TPlatformType.MacARM) then
+        FWriter.Write(') and Defined(CPUARM64) and not Defined(IOS');
+      if (PT = TPlatformType.MacIntel) then
+        FWriter.Write(') and Defined(CPUX64) and not Defined(IOS');
 
       FWriter.WriteLn(')}');
 

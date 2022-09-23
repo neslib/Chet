@@ -89,16 +89,16 @@ type
     { 64-bit Windows }
     Win64,
 
-    { 32-bit macOS }
-    Mac32,
+    { ARM macOS (64-bit) }
+    MacARM,
 
-    { 64-bit macOS }
-    Mac64,
+    { Intel macOS (64-bit) }
+    MacIntel,
 
     { 64-bit Linux }
     Linux64,
 
-    { iOS (32- and/or 64-bit) }
+    { iOS (64-bit) }
     iOS,
 
     { 32-bit Android }
@@ -548,8 +548,8 @@ begin
 
   FPlatforms[TPlatformType.Win32].LibraryName := AProjectName + '_win32.dll';
   FPlatforms[TPlatformType.Win64].LibraryName := AProjectName + '_win64.dll';
-  FPlatforms[TPlatformType.Mac32].LibraryName := 'lib' + AProjectName + '.dylib';
-  FPlatforms[TPlatformType.Mac64].LibraryName := 'lib' + AProjectName + '_macos.a';
+  FPlatforms[TPlatformType.MacARM].LibraryName := 'lib' + AProjectName + '_macos_arm.a';
+  FPlatforms[TPlatformType.MacIntel].LibraryName := 'lib' + AProjectName + '_macos_intel.a';
   FPlatforms[TPlatformType.Linux64].LibraryName := 'lib' + AProjectName + '.so';
   FPlatforms[TPlatformType.iOS].LibraryName := 'lib' + AProjectName + '_ios.a';
   FPlatforms[TPlatformType.Android32].LibraryName := 'lib' + AProjectName + '_android32.a';
@@ -812,6 +812,11 @@ var
   Section: String;
 begin
   Section := IS_PLATFORM_PREFIX + GetEnumName(TypeInfo(TPlatformType), Ord(FPlatformType));
+
+  if (FPlatformType = TPlatformType.MacIntel) and (not AIniFile.SectionExists(Section)) then
+    { Read old Ini file with "Mac64" key instead of "MacIntel" key }
+    Section := IS_PLATFORM_PREFIX + 'Mac64';
+
   FEnabled := AIniFile.ReadBool(Section, ID_ENABLED, False);
   FLibraryName := AIniFile.ReadString(Section, ID_LIBRARY_NAME, '');
   FPrefix := AIniFile.ReadString(Section, ID_PREFIX, '');
@@ -821,10 +826,7 @@ procedure TPlatform.Reset;
 begin
   FEnabled := (FPlatformType = TPlatformType.Win32);
   FLibraryName := '';
-  if (FPlatformType = TPlatformType.Mac32) then
-    FPrefix := '_'
-  else
-    FPrefix := '';
+  FPrefix := '';
 end;
 
 procedure TPlatform.Save(const AIniFile: TMemIniFile);

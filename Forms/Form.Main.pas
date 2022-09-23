@@ -82,8 +82,8 @@ type
     CheckBoxWin32: TCheckBox;
     EditLibWin64: TEdit;
     CheckBoxWin64: TCheckBox;
-    CheckBoxMac32: TCheckBox;
-    EditLibMac32: TEdit;
+    CheckBoxMacARM: TCheckBox;
+    EditLibMacARM: TEdit;
     CheckBoxLinux64: TCheckBox;
     EditLibLinux64: TEdit;
     CheckBoxIOS: TCheckBox;
@@ -94,7 +94,7 @@ type
     LabelPrefix: TLabel;
     EditPrefixWin32: TEdit;
     EditPrefixWin64: TEdit;
-    EditPrefixMac32: TEdit;
+    EditPrefixMacARM: TEdit;
     EditPrefixLinux64: TEdit;
     EditPrefixIOS: TEdit;
     EditPrefixAndroid32: TEdit;
@@ -122,9 +122,9 @@ type
     LabelIgnore: TLabel;
     MemoIgnore: TMemo;
     ImageList: TImageList;
-    CheckBoxMac64: TCheckBox;
-    EditLibMac64: TEdit;
-    EditPrefixMac64: TEdit;
+    CheckBoxMacIntel: TCheckBox;
+    EditLibMacIntel: TEdit;
+    EditPrefixMacIntel: TEdit;
     CheckBoxAndroid64: TCheckBox;
     EditLibAndroid64: TEdit;
     EditPrefixAndroid64: TEdit;
@@ -493,8 +493,8 @@ begin
 
   FPlatformEnabled[TPlatformType.Win32] := CheckBoxWin32;
   FPlatformEnabled[TPlatformType.Win64] := CheckBoxWin64;
-  FPlatformEnabled[TPlatformType.Mac32] := CheckBoxMac32;
-  FPlatformEnabled[TPlatformType.Mac64] := CheckBoxMac64;
+  FPlatformEnabled[TPlatformType.MacARM] := CheckBoxMacARM;
+  FPlatformEnabled[TPlatformType.MacIntel] := CheckBoxMacIntel;
   FPlatformEnabled[TPlatformType.Linux64] := CheckBoxLinux64;
   FPlatformEnabled[TPlatformType.iOS] := CheckBoxIOS;
   FPlatformEnabled[TPlatformType.Android32] := CheckBoxAndroid32;
@@ -502,8 +502,8 @@ begin
 
   FPlatformLibraryName[TPlatformType.Win32] := EditLibWin32;
   FPlatformLibraryName[TPlatformType.Win64] := EditLibWin64;
-  FPlatformLibraryName[TPlatformType.Mac32] := EditLibMac32;
-  FPlatformLibraryName[TPlatformType.Mac64] := EditLibMac64;
+  FPlatformLibraryName[TPlatformType.MacARM] := EditLibMacARM;
+  FPlatformLibraryName[TPlatformType.MacIntel] := EditLibMacIntel;
   FPlatformLibraryName[TPlatformType.Linux64] := EditLibLinux64;
   FPlatformLibraryName[TPlatformType.iOS] := EditLibIOS;
   FPlatformLibraryName[TPlatformType.Android32] := EditLibAndroid32;
@@ -511,8 +511,8 @@ begin
 
   FPlatformPrefix[TPlatformType.Win32] := EditPrefixWin32;
   FPlatformPrefix[TPlatformType.Win64] := EditPrefixWin64;
-  FPlatformPrefix[TPlatformType.Mac32] := EditPrefixMac32;
-  FPlatformPrefix[TPlatformType.Mac64] := EditPrefixMac64;
+  FPlatformPrefix[TPlatformType.MacARM] := EditPrefixMacARM;
+  FPlatformPrefix[TPlatformType.MacIntel] := EditPrefixMacIntel;
   FPlatformPrefix[TPlatformType.Linux64] := EditPrefixLinux64;
   FPlatformPrefix[TPlatformType.iOS] := EditPrefixIOS;
   FPlatformPrefix[TPlatformType.Android32] := EditPrefixAndroid32;

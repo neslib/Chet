@@ -17,6 +17,7 @@ Win64/
 *.dcu
 *.map
 *.deployproj
+*.rsm
 #ignore Delphi temp and backup files
 *.~*
 #ignore Delphi local files

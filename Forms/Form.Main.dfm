@@ -74,7 +74,7 @@ object FormMain: TFormMain
     Margins.Right = 6
     Margins.Bottom = 6
     Align = alClient
-    ActiveCard = CardConversionOptions
+    ActiveCard = CardPlatforms
     BevelOuter = bvNone
     Padding.Left = 8
     Padding.Top = 8
@@ -316,7 +316,7 @@ object FormMain: TFormMain
         TabOrder = 4
         OnClick = CheckBoxPlatformClick
       end
-      object CheckBoxMac32: TCheckBox
+      object CheckBoxMacARM: TCheckBox
         Tag = 2
         Left = 12
         Top = 214
@@ -326,11 +326,11 @@ object FormMain: TFormMain
         Margins.Top = 6
         Margins.Right = 6
         Margins.Bottom = 6
-        Caption = '32-bit macOS'
+        Caption = 'ARM macOS'
         TabOrder = 7
         OnClick = CheckBoxPlatformClick
       end
-      object EditLibMac32: TEdit
+      object EditLibMacARM: TEdit
         Tag = 2
         Left = 236
         Top = 210
@@ -449,7 +449,7 @@ object FormMain: TFormMain
         TabOrder = 6
         OnChange = EditPrefixChange
       end
-      object EditPrefixMac32: TEdit
+      object EditPrefixMacARM: TEdit
         Tag = 2
         Left = 612
         Top = 210
@@ -513,7 +513,7 @@ object FormMain: TFormMain
         TabOrder = 0
         OnChange = EditLibConstantChange
       end
-      object CheckBoxMac64: TCheckBox
+      object CheckBoxMacIntel: TCheckBox
         Tag = 3
         Left = 12
         Top = 268
@@ -523,11 +523,11 @@ object FormMain: TFormMain
         Margins.Top = 6
         Margins.Right = 6
         Margins.Bottom = 6
-        Caption = '64-bit macOS'
+        Caption = 'Intel macOS'
         TabOrder = 10
         OnClick = CheckBoxPlatformClick
       end
-      object EditLibMac64: TEdit
+      object EditLibMacIntel: TEdit
         Tag = 3
         Left = 236
         Top = 264
@@ -540,7 +540,7 @@ object FormMain: TFormMain
         TabOrder = 11
         OnChange = EditLibraryNameChange
       end
-      object EditPrefixMac64: TEdit
+      object EditPrefixMacIntel: TEdit
         Tag = 3
         Left = 612
         Top = 264
@@ -1048,8 +1048,8 @@ object FormMain: TFormMain
   end
   object MainMenu: TMainMenu
     Images = ImageList
-    Left = 140
-    Top = 332
+    Left = 60
+    Top = 652
     object MenuFile: TMenuItem
       Caption = 'File'
       object MenuNew: TMenuItem
@@ -1080,8 +1080,8 @@ object FormMain: TFormMain
   end
   object ActionList: TActionList
     Images = ImageList
-    Left = 248
-    Top = 332
+    Left = 168
+    Top = 652
     object ActionAddCmdLineArg: TAction
       Category = 'Parse Options'
       Caption = 'Add Argument'
@@ -1153,8 +1153,8 @@ object FormMain: TFormMain
         FileMask = '*.h;*.hpp'
       end>
     Options = [fdoPickFolders, fdoPathMustExist]
-    Left = 248
-    Top = 224
+    Left = 168
+    Top = 544
   end
   object SaveDialogProject: TFileSaveDialog
     DefaultExtension = 'htrans'
@@ -1166,8 +1166,8 @@ object FormMain: TFormMain
       end>
     Options = [fdoOverWritePrompt, fdoPathMustExist]
     Title = 'Save project file'
-    Left = 140
-    Top = 276
+    Left = 60
+    Top = 596
   end
   object SaveDialogPasFile: TFileSaveDialog
     DefaultExtension = 'htrans'
@@ -1179,8 +1179,8 @@ object FormMain: TFormMain
       end>
     Options = [fdoOverWritePrompt, fdoPathMustExist]
     Title = 'Target Pascal file'
-    Left = 248
-    Top = 276
+    Left = 168
+    Top = 596
   end
   object OpenDialogProject: TFileOpenDialog
     FavoriteLinks = <>
@@ -1191,13 +1191,13 @@ object FormMain: TFormMain
       end>
     Options = [fdoPathMustExist, fdoFileMustExist]
     Title = 'Open project file'
-    Left = 140
-    Top = 224
+    Left = 60
+    Top = 544
   end
   object ImageList: TImageList
     ColorDepth = cd32Bit
-    Left = 336
-    Top = 332
+    Left = 256
+    Top = 652
     Bitmap = {
       494C010105004000040010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000002000000001002000000000000020
