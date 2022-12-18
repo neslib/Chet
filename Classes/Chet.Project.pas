@@ -186,6 +186,7 @@ type
     FUnconvertibleHandling: TUnconvertibleHandling;
 
     FSymbolsToIgnore: TStrings;
+    FScript: string;
 
     procedure SetHeaderFileDirectory(const Value: String);
     procedure SetIncludeSubdirectories(const Value: Boolean);
@@ -353,6 +354,8 @@ type
     { List of symbols (constants, types, functions) to ignore. These will not
       be translated. Symbols are case-sensitive. }
     property SymbolsToIgnore: TStrings read FSymbolsToIgnore write SetSymbolsToIgnore;
+    { PostProcessing script}
+    property Script: string read FScript write FScript;
   end;
 
 implementation
@@ -363,6 +366,7 @@ const // Ini Sections
   IS_PARSE_OPTIONS = 'ParseOptions';
   IS_CONVERT_OPTIONS = 'ConvertOptions';
   IS_IGNORE = 'Ignore';
+  IS_POSTPROCESS = 'PostProcess';
 
 const // Ini Identifiers
   ID_HEADER_FILE_DIRECTORY = 'HeaderFileDirectory';
@@ -395,6 +399,8 @@ type
   public
     function ReadEnum<T>(const ASection, AIdent: String; const ADefault: T): T;
     procedure WriteEnum<T>(const ASection, AIdent: String; const AValue: T);
+    function ReadStringBinary(const ASection, AIdent: String; const ADefault: string = ''): string;
+    procedure WriteStringBinary(const AValue, ASection, AIdent: String);
   end;
 
 { TCustomIniFileHelper }
@@ -418,6 +424,29 @@ begin
   Move(I, Result, SizeOf(T));
 end;
 
+function TCustomIniFileHelper.ReadStringBinary(const ASection, AIdent, ADefault: string): string;
+var
+  I: Integer;
+  S: TMemoryStream;
+begin
+  Result := ADefault;
+
+  S := TMemoryStream.Create;
+  try
+    I := ReadBinaryStream(ASection, AIdent, S);
+    if I < 0 then
+      Exit;
+
+    S.Read(I, SizeOf(Integer));
+    SetLength(Result, I);
+    if I > 0 then
+      S.Read(Result[1], I * SizeOf(Char));
+  finally
+    S.Free;
+  end;
+end;
+
+
 procedure TCustomIniFileHelper.WriteEnum<T>(const ASection, AIdent: String;
   const AValue: T);
 var
@@ -431,6 +460,24 @@ begin
   S := GetEnumName(TypeInfo(T), I);
 
   WriteString(ASection, AIdent, S);
+end;
+
+procedure TCustomIniFileHelper.WriteStringBinary(const AValue, ASection, AIdent: String);
+var
+  I: Integer;
+  S: TMemoryStream;
+begin
+  I := Length(AValue);
+  S := TMemoryStream.Create;
+  try
+    S.Write(I, SizeOf(I));
+    if I > 0 then
+      S.Write(AValue[1], I * SizeOf(AValue[1]));
+    S.Position := 0;
+    WriteBinaryStream(ASection, AIdent, S);
+  finally
+    S.Free;
+  end;
 end;
 
 { TProject }
@@ -534,6 +581,8 @@ begin
     if (FHeaderFileDirectory = '') then
       FHeaderFileDirectory := '.\';
 
+    FScript := IniFile.ReadStringBinary(IS_POSTPROCESS, 'Script','');
+
     FModified := False;
     FProjectFilename := AFilename;
   finally
@@ -583,6 +632,8 @@ begin
   FUnconvertibleHandling := TUnconvertibleHandling.WriteToDo;
 
   FSymbolsToIgnore.Clear;
+
+  FScript := '';
 end;
 
 procedure TProject.Save(const AFilename: String);
@@ -623,6 +674,8 @@ begin
     IniFile.WriteInteger(IS_IGNORE, ID_COUNT, FSymbolsToIgnore.Count);
     for I := 0 to FSymbolsToIgnore.Count - 1 do
       IniFile.WriteString(IS_IGNORE, ID_ITEM + I.ToString, FSymbolsToIgnore[I]);
+
+    IniFile.WriteStringBinary(IS_POSTPROCESS,'Script',FScript);
 
     IniFile.UpdateFile;
     FModified := False;

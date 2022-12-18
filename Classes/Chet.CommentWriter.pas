@@ -333,7 +333,7 @@ end;
 class function TParsedCommentWriter.IsBlockComment(
   const AComment: TComment): Boolean;
 begin
-  Result := (AComment.Handle.ASTNode <> nil) and
+  Result := {$IFDEF WIN32}(AComment.Handle > 0) and {$ELSE}(AComment.Handle.ASTNode <> nil) and{$ENDIF}
     (AComment.Kind in [TCommentKind.Paragraph, TCommentKind.BlockCommand,
     TCommentKind.VerbatimBlockCommand, TCommentKind.VerbatimBlockLine]);
 end;
@@ -387,7 +387,11 @@ var
   Child, PrevSibling: TComment;
 begin
   InList := False;
+  {$IFDEF WIN32}
+//  TCXComment(PrevSibling);
+  {$ELSE}
   TCXComment(PrevSibling).ASTNode := nil;
+  {$ENDIF}
   for I := 0 to AComment.ChildCount - 1 do
   begin
     Child := AComment.Children[I];
@@ -602,9 +606,12 @@ begin
         AppendLine;
       end;
   else
-    Append(AComment.Text);
-    if (AComment.HasTrailingNewline) then
-      AppendLine;
+    begin
+      S := AComment.Text.Replace('//','',[]);
+      Append(S);
+      if (AComment.HasTrailingNewline) then
+        AppendLine;
+    end;
   end;
 end;
 

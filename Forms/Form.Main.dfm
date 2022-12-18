@@ -2,44 +2,33 @@ object FormMain: TFormMain
   Left = 0
   Top = 0
   Caption = 'Chet - C header translator'
-  ClientHeight = 794
-  ClientWidth = 1138
+  ClientHeight = 397
+  ClientWidth = 569
   Color = clBtnFace
-  Constraints.MinHeight = 760
-  Constraints.MinWidth = 1160
+  Constraints.MinHeight = 380
+  Constraints.MinWidth = 580
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -22
+  Font.Height = -11
   Font.Name = 'Tahoma'
   Font.Style = []
   Menu = MainMenu
   OnCloseQuery = FormCloseQuery
-  PixelsPerInch = 192
-  TextHeight = 27
+  TextHeight = 13
   object StatusBar: TStatusBar
     Left = 0
-    Top = 756
-    Width = 1138
-    Height = 38
-    Margins.Left = 6
-    Margins.Top = 6
-    Margins.Right = 6
-    Margins.Bottom = 6
+    Top = 378
+    Width = 569
+    Height = 19
     Panels = <>
   end
   object ButtonGroupCategories: TButtonGroup
     Left = 0
     Top = 0
-    Width = 250
-    Height = 756
-    Margins.Left = 6
-    Margins.Top = 6
-    Margins.Right = 6
-    Margins.Bottom = 6
+    Width = 125
+    Height = 378
     Align = alLeft
     BorderStyle = bsNone
-    ButtonHeight = 48
-    ButtonWidth = 48
     ButtonOptions = [gboFullSize, gboGroupStyle, gboShowCaptions]
     Items = <
       item
@@ -58,738 +47,510 @@ object FormMain: TFormMain
         Caption = 'Ignore'
       end
       item
+        Caption = 'Post Process'
+      end
+      item
         Caption = 'Translate'
       end>
     ItemIndex = 0
     TabOrder = 1
     OnButtonClicked = ButtonGroupCategoriesButtonClicked
+    ExplicitTop = -6
   end
   object CardPanel: TCardPanel
-    Left = 250
+    Left = 125
     Top = 0
-    Width = 888
-    Height = 756
-    Margins.Left = 6
-    Margins.Top = 6
-    Margins.Right = 6
-    Margins.Bottom = 6
+    Width = 444
+    Height = 378
     Align = alClient
-    ActiveCard = CardPlatforms
+    ActiveCard = PostProcess
     BevelOuter = bvNone
-    Padding.Left = 8
-    Padding.Top = 8
+    Padding.Left = 4
+    Padding.Top = 4
     TabOrder = 2
     object CardProject: TCard
-      Left = 8
-      Top = 8
-      Width = 880
-      Height = 748
-      Margins.Left = 6
-      Margins.Top = 6
-      Margins.Right = 6
-      Margins.Bottom = 6
+      Left = 4
+      Top = 4
+      Width = 440
+      Height = 374
       Caption = 'Project'
       CardIndex = 0
       TabOrder = 0
       DesignSize = (
-        880
-        748)
+        440
+        374)
       object LabelHeaderFileDirectory: TLabel
-        Left = 4
+        Left = 2
         Top = 0
-        Width = 287
-        Height = 27
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Width = 141
+        Height = 13
         Caption = 'Directory with C Header files:'
       end
       object LabelPasFile: TLabel
-        Left = 4
-        Top = 152
-        Width = 176
-        Height = 27
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 2
+        Top = 76
+        Width = 86
+        Height = 13
         Caption = 'Target Pascal file:'
       end
       object LabelUses: TLabel
-        Left = 4
-        Top = 240
-        Width = 384
-        Height = 27
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 2
+        Top = 120
+        Width = 188
+        Height = 13
         Caption = 'Comma-separated list of units to "use":'
       end
       object EditHeaderFileDirectory: TEdit
-        Left = 4
-        Top = 30
-        Width = 768
-        Height = 35
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 2
+        Top = 15
+        Width = 384
+        Height = 21
         Anchors = [akLeft, akTop, akRight]
         TabOrder = 0
         OnChange = EditHeaderFileDirectoryChange
       end
       object ButtonBrowseHeaderFileDirectory: TButton
-        Left = 778
-        Top = 28
-        Width = 66
-        Height = 46
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 389
+        Top = 14
+        Width = 33
+        Height = 23
         Anchors = [akTop, akRight]
         Caption = '...'
         TabOrder = 1
         OnClick = ButtonBrowseHeaderFileDirectoryClick
       end
       object CheckBoxIncludeSubdiretories: TCheckBox
-        Left = 4
-        Top = 84
-        Width = 334
-        Height = 34
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 2
+        Top = 42
+        Width = 167
+        Height = 17
         Caption = 'Include subdirectories'
         TabOrder = 2
         OnClick = CheckBoxIncludeSubdiretoriesClick
       end
       object EditPasFile: TEdit
-        Left = 4
-        Top = 182
-        Width = 768
-        Height = 35
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 2
+        Top = 91
+        Width = 384
+        Height = 21
         Anchors = [akLeft, akTop, akRight]
         TabOrder = 3
         OnChange = EditPasFileChange
       end
       object ButtonBrowsePasFile: TButton
-        Left = 778
-        Top = 180
-        Width = 66
-        Height = 46
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 389
+        Top = 90
+        Width = 33
+        Height = 23
         Anchors = [akTop, akRight]
         Caption = '...'
         TabOrder = 4
         OnClick = ButtonBrowsePasFileClick
       end
       object EditUseUnits: TEdit
-        Left = 4
-        Top = 270
-        Width = 836
-        Height = 35
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 2
+        Top = 135
+        Width = 418
+        Height = 21
         Anchors = [akLeft, akTop, akRight]
         TabOrder = 5
         OnChange = EditUseUnitsChange
       end
     end
     object CardPlatforms: TCard
-      Left = 8
-      Top = 8
-      Width = 880
-      Height = 748
-      Margins.Left = 6
-      Margins.Top = 6
-      Margins.Right = 6
-      Margins.Bottom = 6
+      Left = 4
+      Top = 4
+      Width = 440
+      Height = 374
       Caption = 'Platforms'
       CardIndex = 1
       TabOrder = 4
       object LabelPlatform: TLabel
-        Left = 12
-        Top = 72
-        Width = 89
-        Height = 27
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 6
+        Top = 36
+        Width = 44
+        Height = 13
         Caption = 'Platform:'
       end
       object LabelLibrary: TLabel
-        Left = 240
-        Top = 72
-        Width = 136
-        Height = 27
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 120
+        Top = 36
+        Width = 66
+        Height = 13
         Caption = 'Library name:'
       end
       object LabelPrefix: TLabel
-        Left = 616
-        Top = 72
-        Width = 124
-        Height = 27
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 308
+        Top = 36
+        Width = 62
+        Height = 13
         Caption = 'Prefix (_PU):'
       end
       object LabelLibConstant: TLabel
-        Left = 12
-        Top = 14
-        Width = 164
-        Height = 27
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 6
+        Top = 7
+        Width = 82
+        Height = 13
         Caption = 'Library constant:'
       end
       object EditLibWin32: TEdit
-        Left = 236
-        Top = 102
-        Width = 350
-        Height = 35
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 118
+        Top = 51
+        Width = 175
+        Height = 21
         TabOrder = 2
         OnChange = EditLibraryNameChange
       end
       object CheckBoxWin32: TCheckBox
-        Left = 12
-        Top = 106
-        Width = 220
-        Height = 34
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 6
+        Top = 53
+        Width = 110
+        Height = 17
         Caption = '32-bit Windows'
         TabOrder = 1
         OnClick = CheckBoxPlatformClick
       end
       object EditLibWin64: TEdit
         Tag = 1
-        Left = 236
-        Top = 156
-        Width = 350
-        Height = 35
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 118
+        Top = 78
+        Width = 175
+        Height = 21
         TabOrder = 5
         OnChange = EditLibraryNameChange
       end
       object CheckBoxWin64: TCheckBox
         Tag = 1
-        Left = 12
-        Top = 160
-        Width = 220
-        Height = 34
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 6
+        Top = 80
+        Width = 110
+        Height = 17
         Caption = '64-bit Windows'
         TabOrder = 4
         OnClick = CheckBoxPlatformClick
       end
       object CheckBoxMacARM: TCheckBox
         Tag = 2
-        Left = 12
-        Top = 214
-        Width = 220
-        Height = 34
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 6
+        Top = 107
+        Width = 110
+        Height = 17
         Caption = 'ARM macOS'
         TabOrder = 7
         OnClick = CheckBoxPlatformClick
       end
       object EditLibMacARM: TEdit
         Tag = 2
-        Left = 236
-        Top = 210
-        Width = 350
-        Height = 35
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 118
+        Top = 105
+        Width = 175
+        Height = 21
         TabOrder = 8
         OnChange = EditLibraryNameChange
       end
       object CheckBoxLinux64: TCheckBox
         Tag = 4
-        Left = 12
-        Top = 322
-        Width = 220
-        Height = 34
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 6
+        Top = 161
+        Width = 110
+        Height = 17
         Caption = '64-bit Linux'
         TabOrder = 13
         OnClick = CheckBoxPlatformClick
       end
       object EditLibLinux64: TEdit
         Tag = 4
-        Left = 236
-        Top = 318
-        Width = 350
-        Height = 35
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 118
+        Top = 159
+        Width = 175
+        Height = 21
         TabOrder = 14
         OnChange = EditLibraryNameChange
       end
       object CheckBoxIOS: TCheckBox
         Tag = 5
-        Left = 12
-        Top = 376
-        Width = 220
-        Height = 34
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 6
+        Top = 188
+        Width = 110
+        Height = 17
         Caption = 'iOS'
         TabOrder = 16
         OnClick = CheckBoxPlatformClick
       end
       object EditLibIOS: TEdit
         Tag = 5
-        Left = 236
-        Top = 372
-        Width = 350
-        Height = 35
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 118
+        Top = 186
+        Width = 175
+        Height = 21
         TabOrder = 17
         OnChange = EditLibraryNameChange
       end
       object CheckBoxAndroid32: TCheckBox
         Tag = 6
-        Left = 12
-        Top = 430
-        Width = 220
-        Height = 34
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 6
+        Top = 215
+        Width = 110
+        Height = 17
         Caption = '32-bit Android'
         TabOrder = 19
         OnClick = CheckBoxPlatformClick
       end
       object EditLibAndroid32: TEdit
         Tag = 6
-        Left = 236
-        Top = 426
-        Width = 350
-        Height = 35
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 118
+        Top = 213
+        Width = 175
+        Height = 21
         TabOrder = 20
         OnChange = EditLibraryNameChange
       end
       object EditPrefixWin32: TEdit
-        Left = 612
-        Top = 102
-        Width = 60
-        Height = 35
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 306
+        Top = 51
+        Width = 30
+        Height = 21
         TabOrder = 3
         OnChange = EditPrefixChange
       end
       object EditPrefixWin64: TEdit
         Tag = 1
-        Left = 612
-        Top = 156
-        Width = 60
-        Height = 35
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 306
+        Top = 78
+        Width = 30
+        Height = 21
         TabOrder = 6
         OnChange = EditPrefixChange
       end
       object EditPrefixMacARM: TEdit
         Tag = 2
-        Left = 612
-        Top = 210
-        Width = 60
-        Height = 35
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 306
+        Top = 105
+        Width = 30
+        Height = 21
         TabOrder = 9
         OnChange = EditPrefixChange
       end
       object EditPrefixLinux64: TEdit
         Tag = 4
-        Left = 612
-        Top = 318
-        Width = 60
-        Height = 35
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 306
+        Top = 159
+        Width = 30
+        Height = 21
         TabOrder = 15
         OnChange = EditPrefixChange
       end
       object EditPrefixIOS: TEdit
         Tag = 5
-        Left = 612
-        Top = 372
-        Width = 60
-        Height = 35
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 306
+        Top = 186
+        Width = 30
+        Height = 21
         TabOrder = 18
         OnChange = EditPrefixChange
       end
       object EditPrefixAndroid32: TEdit
         Tag = 6
-        Left = 612
-        Top = 426
-        Width = 60
-        Height = 35
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 306
+        Top = 213
+        Width = 30
+        Height = 21
         TabOrder = 21
         OnChange = EditPrefixChange
       end
       object EditLibConstant: TEdit
-        Left = 236
-        Top = 8
-        Width = 350
-        Height = 35
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 118
+        Top = 4
+        Width = 175
+        Height = 21
         TabOrder = 0
         OnChange = EditLibConstantChange
       end
       object CheckBoxMacIntel: TCheckBox
         Tag = 3
-        Left = 12
-        Top = 268
-        Width = 220
-        Height = 34
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 6
+        Top = 134
+        Width = 110
+        Height = 17
         Caption = 'Intel macOS'
         TabOrder = 10
         OnClick = CheckBoxPlatformClick
       end
       object EditLibMacIntel: TEdit
         Tag = 3
-        Left = 236
-        Top = 264
-        Width = 350
-        Height = 35
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 118
+        Top = 132
+        Width = 175
+        Height = 21
         TabOrder = 11
         OnChange = EditLibraryNameChange
       end
       object EditPrefixMacIntel: TEdit
         Tag = 3
-        Left = 612
-        Top = 264
-        Width = 60
-        Height = 35
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 306
+        Top = 132
+        Width = 30
+        Height = 21
         TabOrder = 12
         OnChange = EditPrefixChange
       end
       object CheckBoxAndroid64: TCheckBox
         Tag = 7
-        Left = 12
-        Top = 484
-        Width = 220
-        Height = 34
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 6
+        Top = 242
+        Width = 110
+        Height = 17
         Caption = '64-bit Android'
         TabOrder = 22
         OnClick = CheckBoxPlatformClick
       end
       object EditLibAndroid64: TEdit
         Tag = 7
-        Left = 236
-        Top = 480
-        Width = 350
-        Height = 35
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 118
+        Top = 240
+        Width = 175
+        Height = 21
         TabOrder = 23
         OnChange = EditLibraryNameChange
       end
       object EditPrefixAndroid64: TEdit
         Tag = 7
-        Left = 612
-        Top = 480
-        Width = 60
-        Height = 35
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 306
+        Top = 240
+        Width = 30
+        Height = 21
         TabOrder = 24
         OnChange = EditPrefixChange
       end
     end
     object CardParseOptions: TCard
-      Left = 8
-      Top = 8
-      Width = 880
-      Height = 748
-      Margins.Left = 6
-      Margins.Top = 6
-      Margins.Right = 6
-      Margins.Bottom = 6
+      Left = 4
+      Top = 4
+      Width = 440
+      Height = 374
       Caption = 'Parse Options'
       CardIndex = 2
       TabOrder = 1
       object LabelCmdLineArgs: TLabel
-        Left = 4
-        Top = 46
-        Width = 420
-        Height = 27
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 2
+        Top = 23
+        Width = 205
+        Height = 13
         Caption = 'Command line arguments to pass to Clang:'
       end
       object CheckBoxIgnoreParseErrors: TCheckBox
-        Left = 4
+        Left = 2
         Top = 0
-        Width = 298
-        Height = 34
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Width = 149
+        Height = 17
         Caption = 'Ignore parse errors'
         TabOrder = 0
         OnClick = CheckBoxIgnoreParseErrorsClick
       end
       object ListBoxCmdLineArgs: TListBox
-        Left = 4
-        Top = 76
-        Width = 806
-        Height = 228
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
-        ItemHeight = 27
+        Left = 2
+        Top = 38
+        Width = 403
+        Height = 114
+        ItemHeight = 13
         TabOrder = 1
         OnClick = ListBoxCmdLineArgsClick
       end
       object ButtonAddCmdLineArg: TButton
-        Left = 4
-        Top = 316
-        Width = 200
-        Height = 50
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 2
+        Top = 158
+        Width = 100
+        Height = 25
         Action = ActionAddCmdLineArg
         TabOrder = 2
       end
       object ButtonDeleteArgument: TButton
-        Left = 608
-        Top = 316
-        Width = 200
-        Height = 50
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 304
+        Top = 158
+        Width = 100
+        Height = 25
         Action = ActionDeleteCmdLineArg
         TabOrder = 5
       end
       object ButtonAddDefine: TButton
-        Left = 206
-        Top = 316
-        Width = 200
-        Height = 50
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 103
+        Top = 158
+        Width = 100
+        Height = 25
         Action = ActionAddDefine
         TabOrder = 3
       end
       object ButtonAddIncludePath: TButton
-        Left = 408
-        Top = 316
-        Width = 200
-        Height = 50
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 204
+        Top = 158
+        Width = 100
+        Height = 25
         Action = ActionAddIncludePath
         TabOrder = 4
       end
     end
     object CardConversionOptions: TCard
-      Left = 8
-      Top = 8
-      Width = 880
-      Height = 748
-      Margins.Left = 6
-      Margins.Top = 6
-      Margins.Right = 6
-      Margins.Bottom = 6
+      Left = 4
+      Top = 4
+      Width = 440
+      Height = 374
       Caption = 'Conversion Options'
       CardIndex = 3
       TabOrder = 3
       object LabelConvertChar: TLabel
-        Left = 12
-        Top = 122
-        Width = 176
-        Height = 27
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 6
+        Top = 61
+        Width = 88
+        Height = 13
         Caption = 'Convert "char" to:'
       end
       object LabelConvertComments: TLabel
-        Left = 12
-        Top = 68
-        Width = 189
-        Height = 27
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 6
+        Top = 34
+        Width = 92
+        Height = 13
         Caption = 'Comment handling:'
       end
       object LabelCallConv: TLabel
-        Left = 12
-        Top = 14
-        Width = 184
-        Height = 27
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 6
+        Top = 7
+        Width = 91
+        Height = 13
         Caption = 'Calling convention:'
       end
       object LabelReservedWordHandling: TLabel
-        Left = 12
-        Top = 240
-        Width = 243
-        Height = 27
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 6
+        Top = 120
+        Width = 120
+        Height = 13
         Caption = 'Reserved word handling:'
       end
       object LabelUnconvertibleHandling: TLabel
-        Left = 12
-        Top = 394
-        Width = 264
-        Height = 27
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 6
+        Top = 197
+        Width = 131
+        Height = 13
         Caption = 'Unconvertible declarations:'
       end
       object LabelEnumHandling: TLabel
-        Left = 12
-        Top = 340
-        Width = 151
-        Height = 27
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 6
+        Top = 170
+        Width = 73
+        Height = 13
         Caption = 'Enum handling:'
       end
       object LabelConvertUnsignedChar: TLabel
-        Left = 14
-        Top = 176
-        Width = 270
-        Height = 27
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 7
+        Top = 88
+        Width = 134
+        Height = 13
         Caption = 'Convert "unsigned char" to:'
       end
       object ComboBoxConvertChar: TComboBox
-        Left = 296
-        Top = 116
-        Width = 560
-        Height = 35
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 148
+        Top = 58
+        Width = 280
+        Height = 21
         Style = csDropDownList
         ItemIndex = 0
         TabOrder = 2
@@ -802,14 +563,10 @@ object FormMain: TFormMain
           'AnsiString')
       end
       object ComboBoxConvertComments: TComboBox
-        Left = 296
-        Top = 62
-        Width = 560
-        Height = 35
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 148
+        Top = 31
+        Width = 280
+        Height = 21
         Style = csDropDownList
         ItemIndex = 0
         TabOrder = 1
@@ -822,14 +579,10 @@ object FormMain: TFormMain
           'Convert comments to PasDoc style (experimental)')
       end
       object ComboBoxCallConv: TComboBox
-        Left = 296
-        Top = 8
-        Width = 560
-        Height = 35
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 148
+        Top = 4
+        Width = 280
+        Height = 21
         Style = csDropDownList
         ItemIndex = 0
         TabOrder = 0
@@ -840,14 +593,10 @@ object FormMain: TFormMain
           'stdcall')
       end
       object ComboBoxReservedWordHandling: TComboBox
-        Left = 296
-        Top = 234
-        Width = 560
-        Height = 35
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 148
+        Top = 117
+        Width = 280
+        Height = 21
         Style = csDropDownList
         ItemIndex = 0
         TabOrder = 3
@@ -859,14 +608,10 @@ object FormMain: TFormMain
           'Add trailing '#39'_'#39)
       end
       object CheckBoxDirectivesAsReservedWords: TCheckBox
-        Left = 12
-        Top = 288
-        Width = 382
-        Height = 34
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 6
+        Top = 144
+        Width = 191
+        Height = 17
         Caption = 'Treat directives as reserved words'
         Checked = True
         State = cbChecked
@@ -874,14 +619,10 @@ object FormMain: TFormMain
         OnClick = CheckBoxDirectivesAsReservedWordsClick
       end
       object ComboBoxUnconvertibleHandling: TComboBox
-        Left = 296
-        Top = 388
-        Width = 560
-        Height = 35
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 148
+        Top = 194
+        Width = 280
+        Height = 21
         Style = csDropDownList
         ItemIndex = 0
         TabOrder = 6
@@ -893,14 +634,10 @@ object FormMain: TFormMain
           'Ignore declaration')
       end
       object ComboBoxEnumHandling: TComboBox
-        Left = 296
-        Top = 334
-        Width = 560
-        Height = 35
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 148
+        Top = 167
+        Width = 280
+        Height = 21
         Style = csDropDownList
         ItemIndex = 0
         TabOrder = 5
@@ -911,14 +648,10 @@ object FormMain: TFormMain
           'Convert to integer type and constants')
       end
       object ComboBoxConvertUnsignedChar: TComboBox
-        Left = 296
-        Top = 170
-        Width = 560
-        Height = 35
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 148
+        Top = 85
+        Width = 280
+        Height = 21
         Style = csDropDownList
         ItemIndex = 2
         TabOrder = 7
@@ -931,27 +664,19 @@ object FormMain: TFormMain
           'AnsiString')
       end
       object CheckBoxDelayedLoading: TCheckBox
-        Left = 12
-        Top = 442
-        Width = 662
-        Height = 34
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 6
+        Top = 221
+        Width = 331
+        Height = 17
         Caption = 'Add "delayed" directive to imported routines (Windows only)'
         TabOrder = 8
         OnClick = CheckBoxDelayedLoadingClick
       end
       object CheckBoxPrefixSymbolsWithUnderscore: TCheckBox
-        Left = 14
-        Top = 488
-        Width = 662
-        Height = 34
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 7
+        Top = 244
+        Width = 331
+        Height = 17
         Caption = 'Prefix all symbols with an underscore (experimental)'
         TabOrder = 9
         Visible = False
@@ -959,45 +684,39 @@ object FormMain: TFormMain
       end
     end
     object CardIgnore: TCard
-      Left = 8
-      Top = 8
-      Width = 880
-      Height = 748
-      Margins.Left = 6
-      Margins.Top = 6
-      Margins.Right = 6
-      Margins.Bottom = 6
+      Left = 4
+      Top = 4
+      Width = 440
+      Height = 374
       Caption = 'Ignore'
       CardIndex = 4
       TabOrder = 5
       object LabelIgnore: TLabel
         AlignWithMargins = True
-        Left = 12
-        Top = 8
-        Width = 862
-        Height = 54
-        Margins.Left = 12
-        Margins.Top = 8
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Left = 6
+        Top = 4
+        Width = 431
+        Height = 26
+        Margins.Left = 6
+        Margins.Top = 4
         Align = alTop
         Caption = 
           'Symbols (constants, types, functions) to ignore. These will not ' +
           'be translated. Enter one symbol per line. Symbols are case-sensi' +
           'tive.'
         WordWrap = True
-        ExplicitWidth = 855
+        ExplicitWidth = 424
       end
       object MemoIgnore: TMemo
         AlignWithMargins = True
-        Left = 8
-        Top = 68
-        Width = 864
-        Height = 672
-        Margins.Left = 8
+        Left = 4
+        Top = 33
+        Width = 432
+        Height = 337
+        Margins.Left = 4
         Margins.Top = 0
-        Margins.Right = 8
-        Margins.Bottom = 8
+        Margins.Right = 4
+        Margins.Bottom = 4
         Align = alClient
         ScrollBars = ssVertical
         TabOrder = 0
@@ -1005,37 +724,92 @@ object FormMain: TFormMain
         OnExit = MemoIgnoreExit
       end
     end
-    object CardTranslate: TCard
-      Left = 8
-      Top = 8
-      Width = 880
-      Height = 748
-      Margins.Left = 6
-      Margins.Top = 6
-      Margins.Right = 6
-      Margins.Bottom = 6
-      Caption = 'Translate'
+    object PostProcess: TCard
+      Left = 4
+      Top = 4
+      Width = 440
+      Height = 374
+      Margins.Left = 5
+      Margins.Top = 5
+      Margins.Right = 5
+      Margins.Bottom = 5
+      Caption = 'PostProcess'
       CardIndex = 5
-      TabOrder = 2
-      object ButtonRunTranslator: TButton
+      TabOrder = 6
+      DesignSize = (
+        440
+        374)
+      object ScriptMemo: TMemo
+        Left = 0
+        Top = 42
+        Width = 660
+        Height = 519
+        Margins.Left = 5
+        Margins.Top = 5
+        Margins.Right = 5
+        Margins.Bottom = 5
+        Anchors = [akLeft, akTop, akRight, akBottom]
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -18
+        Font.Name = 'Consolas'
+        Font.Style = []
+        Lines.Strings = (
+          '')
+        ParentFont = False
+        ScrollBars = ssBoth
+        TabOrder = 0
+      end
+      object ButtonClearScript: TButton
         Left = 4
         Top = 0
-        Width = 302
-        Height = 50
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
+        Width = 113
+        Height = 38
+        Margins.Left = 5
+        Margins.Top = 5
+        Margins.Right = 5
+        Margins.Bottom = 5
+        Caption = 'Clear Script'
+        TabOrder = 1
+        OnClick = ButtonClearScriptClick
+      end
+      object ButtonScriptHelp: TButton
+        Left = 127
+        Top = 0
+        Width = 113
+        Height = 38
+        Margins.Left = 5
+        Margins.Top = 5
+        Margins.Right = 5
+        Margins.Bottom = 5
+        Caption = 'Script Help'
+        TabOrder = 2
+        OnClick = ButtonScriptHelpClick
+      end
+    end
+    object CardTranslate: TCard
+      Left = 4
+      Top = 4
+      Width = 440
+      Height = 374
+      Caption = 'Translate'
+      CardIndex = 6
+      TabOrder = 2
+      object ButtonRunTranslator: TButton
+        Left = 2
+        Top = 0
+        Width = 151
+        Height = 25
         Action = ActionRunTranslator
         TabOrder = 0
       end
       object MemoMessages: TMemo
         AlignWithMargins = True
-        Left = 4
-        Top = 56
-        Width = 876
-        Height = 692
-        Margins.Left = 4
+        Left = 2
+        Top = 28
+        Width = 438
+        Height = 346
+        Margins.Left = 2
         Margins.Top = 0
         Margins.Right = 0
         Margins.Bottom = 0
