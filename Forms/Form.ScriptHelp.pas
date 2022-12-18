@@ -1,3 +1,12 @@
+{==============================================================================
+
+Copyright © 2022 tinyBigGAMES™ LLC
+All Rights Reserved.
+
+Website: https://tinybiggames.com
+Email  : support@tinybiggames.com
+============================================================================= }
+
 unit Form.ScriptHelp;
 
 interface
