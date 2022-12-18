@@ -57,3 +57,49 @@ typedef struct Struct10 {
 typedef struct {
     int value;
 } Struct11;
+
+/// Bit-backed struct
+typedef struct tag_Struct12 {
+    unsigned   f1    :16;
+    unsigned   f2     :1;
+    unsigned   f3     :1;
+    unsigned   f4     :1;
+    unsigned   f5     :1;
+    unsigned   f6     :1;
+    unsigned   f7     :1;
+    unsigned   f8     :1;
+    unsigned   f9     :1;
+    unsigned   f10    :1;
+    unsigned   f11    :1;
+    unsigned   f12    :6;  
+} Struct12;
+
+/// Bit-backed struct2
+typedef struct tag_Struct13 {
+    unsigned short    f1_1     :5;
+    unsigned short    f1_2     :1;  
+    unsigned short    f1_3     :1;
+    unsigned short    f1_4     :1;
+    unsigned short    f1_5     :1;
+    unsigned short    f1_6     :1;
+    unsigned short    f1_7     :1;
+    unsigned short    f1_8     :1;
+    unsigned short    f1_9     :1;
+    unsigned short    f1_10    :1;
+    unsigned short    f1_11    :2;
+    /// Bit-backed struct2    
+    Struct12 f2;    
+} Struct13;
+
+/// Bit-backed struct3
+typedef struct tag_Struct14 {
+    unsigned short    f1_1     :10; 
+    unsigned short    f1_2     :1;  
+    unsigned short    f1_3     :1;  
+    unsigned short    f1_4     :1;  
+    unsigned short    f1_5     :1;  
+    unsigned short    f1_6     :1;  
+    unsigned short    f1_7     :1;     
+    Struct12 f2;  /// Bit-backed struct 
+    Struct13 f3;  /// Bit-backed struct2        
+} Struct14;
