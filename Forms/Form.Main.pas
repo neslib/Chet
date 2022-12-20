@@ -551,6 +551,7 @@ begin
 
   if (ParamCount > 0) then
     Load(ParamStr(1));
+  MemoCustomTypesMap.Hint := 'Input format: CTypeName=DelphiTypeName.'#13#10'Use CTRL + ENTER to insert new line.';
   MemoCustomTypesMap.OnChange := MemoCustomTypesMapChange;
 end;
 

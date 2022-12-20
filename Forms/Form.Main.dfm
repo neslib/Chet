@@ -22,8 +22,6 @@ object FormMain: TFormMain
     Width = 654
     Height = 19
     Panels = <>
-    ExplicitTop = 378
-    ExplicitWidth = 569
   end
   object ButtonGroupCategories: TButtonGroup
     Left = 0
@@ -58,8 +56,6 @@ object FormMain: TFormMain
     ItemIndex = 0
     TabOrder = 1
     OnButtonClicked = ButtonGroupCategoriesButtonClicked
-    ExplicitTop = -6
-    ExplicitHeight = 378
   end
   object CardPanel: TCardPanel
     Left = 125
@@ -67,13 +63,11 @@ object FormMain: TFormMain
     Width = 529
     Height = 430
     Align = alClient
-    ActiveCard = CardProject
+    ActiveCard = CardConversionOptions
     BevelOuter = bvNone
     Padding.Left = 4
     Padding.Top = 4
     TabOrder = 2
-    ExplicitWidth = 444
-    ExplicitHeight = 378
     object CardProject: TCard
       Left = 4
       Top = 4
@@ -115,13 +109,6 @@ object FormMain: TFormMain
         Height = 13
         Caption = 'Comma-separated list of files to "ignore" in headers Directory:'
       end
-      object LabelCustomTypes: TLabel
-        Left = 2
-        Top = 195
-        Width = 103
-        Height = 13
-        Caption = 'Custom types map:'
-      end
       object EditHeaderFileDirectory: TEdit
         Left = 2
         Top = 15
@@ -130,7 +117,6 @@ object FormMain: TFormMain
         Anchors = [akLeft, akTop, akRight]
         TabOrder = 0
         OnChange = EditHeaderFileDirectoryChange
-        ExplicitWidth = 384
       end
       object ButtonBrowseHeaderFileDirectory: TButton
         Left = 474
@@ -141,7 +127,6 @@ object FormMain: TFormMain
         Caption = '...'
         TabOrder = 1
         OnClick = ButtonBrowseHeaderFileDirectoryClick
-        ExplicitLeft = 389
       end
       object CheckBoxIncludeSubdiretories: TCheckBox
         Left = 2
@@ -160,7 +145,6 @@ object FormMain: TFormMain
         Anchors = [akLeft, akTop, akRight]
         TabOrder = 3
         OnChange = EditPasFileChange
-        ExplicitWidth = 384
       end
       object ButtonBrowsePasFile: TButton
         Left = 474
@@ -171,7 +155,6 @@ object FormMain: TFormMain
         Caption = '...'
         TabOrder = 4
         OnClick = ButtonBrowsePasFileClick
-        ExplicitLeft = 389
       end
       object EditUseUnits: TEdit
         Left = 2
@@ -181,7 +164,6 @@ object FormMain: TFormMain
         Anchors = [akLeft, akTop, akRight]
         TabOrder = 5
         OnChange = EditUseUnitsChange
-        ExplicitWidth = 418
       end
       object EditIgnoredHeaders: TEdit
         Left = 2
@@ -194,17 +176,6 @@ object FormMain: TFormMain
         Anchors = [akLeft, akTop, akRight]
         TabOrder = 6
         OnChange = EditIgnoredHeadersChange
-        ExplicitWidth = 418
-      end
-      object MemoCustomTypesMap: TMemo
-        Left = 2
-        Top = 214
-        Width = 503
-        Height = 206
-        Anchors = [akLeft, akTop, akRight, akBottom]
-        TabOrder = 7
-        WantReturns = False
-        WordWrap = False
       end
     end
     object CardPlatforms: TCard
@@ -215,8 +186,6 @@ object FormMain: TFormMain
       Caption = 'Platforms'
       CardIndex = 1
       TabOrder = 4
-      ExplicitWidth = 440
-      ExplicitHeight = 374
       object LabelPlatform: TLabel
         Left = 6
         Top = 36
@@ -483,8 +452,6 @@ object FormMain: TFormMain
       Caption = 'Parse Options'
       CardIndex = 2
       TabOrder = 1
-      ExplicitWidth = 440
-      ExplicitHeight = 374
       object LabelCmdLineArgs: TLabel
         Left = 2
         Top = 23
@@ -551,8 +518,9 @@ object FormMain: TFormMain
       Caption = 'Conversion Options'
       CardIndex = 3
       TabOrder = 3
-      ExplicitWidth = 440
-      ExplicitHeight = 374
+      DesignSize = (
+        525
+        426)
       object LabelConvertChar: TLabel
         Left = 6
         Top = 61
@@ -601,6 +569,14 @@ object FormMain: TFormMain
         Width = 134
         Height = 13
         Caption = 'Convert "unsigned char" to:'
+      end
+      object LabelCustomTypes: TLabel
+        Left = 7
+        Top = 267
+        Width = 93
+        Height = 13
+        Caption = 'Custom types map:'
+        FocusControl = MemoCustomTypesMap
       end
       object ComboBoxConvertChar: TComboBox
         Left = 148
@@ -738,6 +714,19 @@ object FormMain: TFormMain
         Visible = False
         OnClick = CheckBoxPrefixSymbolsWithUnderscoreClick
       end
+      object MemoCustomTypesMap: TMemo
+        Left = 2
+        Top = 286
+        Width = 511
+        Height = 134
+        Hint = 
+          'Input format: CTypeName=DelphiTypeName. Use CTRL + ENTER to inse' +
+          'rt new line.'
+        Anchors = [akLeft, akTop, akRight, akBottom]
+        TabOrder = 10
+        WantReturns = False
+        WordWrap = False
+      end
     end
     object CardIgnore: TCard
       Left = 4
@@ -747,8 +736,6 @@ object FormMain: TFormMain
       Caption = 'Ignore'
       CardIndex = 4
       TabOrder = 5
-      ExplicitWidth = 440
-      ExplicitHeight = 374
       object LabelIgnore: TLabel
         AlignWithMargins = True
         Left = 6
@@ -763,7 +750,7 @@ object FormMain: TFormMain
           'be translated. Enter one symbol per line. Symbols are case-sensi' +
           'tive.'
         WordWrap = True
-        ExplicitWidth = 424
+        ExplicitWidth = 502
       end
       object MemoIgnore: TMemo
         AlignWithMargins = True
@@ -780,8 +767,6 @@ object FormMain: TFormMain
         TabOrder = 0
         WordWrap = False
         OnExit = MemoIgnoreExit
-        ExplicitWidth = 432
-        ExplicitHeight = 337
       end
     end
     object PostProcess: TCard
@@ -796,8 +781,6 @@ object FormMain: TFormMain
       Caption = 'PostProcess'
       CardIndex = 5
       TabOrder = 6
-      ExplicitWidth = 440
-      ExplicitHeight = 374
       DesignSize = (
         525
         426)
@@ -821,8 +804,6 @@ object FormMain: TFormMain
         ParentFont = False
         ScrollBars = ssBoth
         TabOrder = 0
-        ExplicitWidth = 660
-        ExplicitHeight = 519
       end
       object ButtonClearScript: TButton
         Left = 4
@@ -859,8 +840,6 @@ object FormMain: TFormMain
       Caption = 'Translate'
       CardIndex = 6
       TabOrder = 2
-      ExplicitWidth = 440
-      ExplicitHeight = 374
       object ButtonRunTranslator: TButton
         Left = 2
         Top = 0
@@ -883,8 +862,6 @@ object FormMain: TFormMain
         Anchors = [akLeft, akTop, akRight, akBottom]
         ScrollBars = ssVertical
         TabOrder = 1
-        ExplicitWidth = 438
-        ExplicitHeight = 346
       end
     end
   end
