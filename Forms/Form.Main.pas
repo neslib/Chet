@@ -135,7 +135,11 @@ type
     PostProcess: TCard;
     ScriptMemo: TMemo;
     ButtonClearScript: TButton;
-    ButtonScriptHelp: TButton;    
+    ButtonScriptHelp: TButton;
+    LabelIgnoredHeaders: TLabel;
+    EditIgnoredHeaders: TEdit;
+    LabelCustomTypes: TLabel;
+    MemoCustomTypesMap: TMemo;
     procedure ButtonGroupCategoriesButtonClicked(Sender: TObject; Index: Integer);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure ActionAddCmdLineArgExecute(Sender: TObject);
@@ -173,6 +177,8 @@ type
     procedure CheckBoxPrefixSymbolsWithUnderscoreClick(Sender: TObject);
     procedure ButtonClearScriptClick(Sender: TObject);
     procedure ButtonScriptHelpClick(Sender: TObject);    
+    procedure EditIgnoredHeadersChange(Sender: TObject);
+    procedure MemoCustomTypesMapChange(Sender: TObject);
   private
     { Private declarations }
     FProject: TProject;
@@ -207,8 +213,8 @@ implementation
 
 {$R *.dfm}
 uses
-  Chet.CleanHeader, Form.ScriptHelp;
-  
+  Cnet.Postprocessor, Form.ScriptHelp;
+
 procedure TFormMain.ActionAddCmdLineArgExecute(Sender: TObject);
 begin
   AddCommandLineArgument(InputBox('Add command line argument', 'Argument', ''));
@@ -328,7 +334,7 @@ begin
   try
     Translator.OnMessage := HandleTranslatorMessage;
     Translator.Run;
-    DoCleanHeader(FProject, ScriptMemo.Lines);
+    TFilePostProcessor.Execute(FProject, ScriptMemo.Lines);
   finally
     Translator.Free;
   end;
@@ -545,6 +551,7 @@ begin
 
   if (ParamCount > 0) then
     Load(ParamStr(1));
+  MemoCustomTypesMap.OnChange := MemoCustomTypesMapChange;
 end;
 
 destructor TFormMain.Destroy;
@@ -556,6 +563,11 @@ end;
 procedure TFormMain.EditHeaderFileDirectoryChange(Sender: TObject);
 begin
   FProject.HeaderFileDirectory := EditHeaderFileDirectory.Text;
+end;
+
+procedure TFormMain.EditIgnoredHeadersChange(Sender: TObject);
+begin
+  FProject.IgnoredFiles := EditIgnoredHeaders.Text;
 end;
 
 procedure TFormMain.EditLibConstantChange(Sender: TObject);
@@ -617,8 +629,14 @@ begin
     Exit;
   end;
 
+  CheckSave;
   FProject.Load(AFilename);
   SetControls;
+end;
+
+procedure TFormMain.MemoCustomTypesMapChange(Sender: TObject);
+begin
+  FProject.CustomCTypesMap := MemoCustomTypesMap.Lines.CommaText.Trim;
 end;
 
 procedure TFormMain.MemoIgnoreExit(Sender: TObject);
@@ -657,6 +675,7 @@ procedure TFormMain.SetControls;
 begin
   EditHeaderFileDirectory.Text := FProject.HeaderFileDirectory;
   CheckBoxIncludeSubdiretories.Checked := FProject.IncludeSubdirectories;
+  EditIgnoredHeaders.Text := FProject.IgnoredFiles;
   EditPasFile.Text := FProject.TargetPasFile;
   EditUseUnits.Text := FProject.UseUnits;
 
@@ -678,7 +697,8 @@ begin
 
   MemoIgnore.Lines := FProject.SymbolsToIgnore;
   ScriptMemo.Lines.Text := FProject.Script;  
-  
+  MemoCustomTypesMap.Lines.Commatext := FProject.CustomCTypesMap;
+
   EditLibConstant.Text := FProject.LibraryConstant;
   
   SetPlatformControls;

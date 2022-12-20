@@ -2,8 +2,8 @@ object FormMain: TFormMain
   Left = 0
   Top = 0
   Caption = 'Chet - C header translator'
-  ClientHeight = 397
-  ClientWidth = 569
+  ClientHeight = 449
+  ClientWidth = 654
   Color = clBtnFace
   Constraints.MinHeight = 380
   Constraints.MinWidth = 580
@@ -13,20 +13,23 @@ object FormMain: TFormMain
   Font.Name = 'Tahoma'
   Font.Style = []
   Menu = MainMenu
+  ShowHint = True
   OnCloseQuery = FormCloseQuery
   TextHeight = 13
   object StatusBar: TStatusBar
     Left = 0
-    Top = 378
-    Width = 569
+    Top = 430
+    Width = 654
     Height = 19
     Panels = <>
+    ExplicitTop = 378
+    ExplicitWidth = 569
   end
   object ButtonGroupCategories: TButtonGroup
     Left = 0
     Top = 0
     Width = 125
-    Height = 378
+    Height = 430
     Align = alLeft
     BorderStyle = bsNone
     ButtonOptions = [gboFullSize, gboGroupStyle, gboShowCaptions]
@@ -56,29 +59,34 @@ object FormMain: TFormMain
     TabOrder = 1
     OnButtonClicked = ButtonGroupCategoriesButtonClicked
     ExplicitTop = -6
+    ExplicitHeight = 378
   end
   object CardPanel: TCardPanel
     Left = 125
     Top = 0
-    Width = 444
-    Height = 378
+    Width = 529
+    Height = 430
     Align = alClient
-    ActiveCard = PostProcess
+    ActiveCard = CardProject
     BevelOuter = bvNone
     Padding.Left = 4
     Padding.Top = 4
     TabOrder = 2
+    ExplicitWidth = 444
+    ExplicitHeight = 378
     object CardProject: TCard
       Left = 4
       Top = 4
-      Width = 440
-      Height = 374
+      Width = 525
+      Height = 426
       Caption = 'Project'
       CardIndex = 0
       TabOrder = 0
+      ExplicitLeft = 6
+      ExplicitTop = -2
       DesignSize = (
-        440
-        374)
+        525
+        426)
       object LabelHeaderFileDirectory: TLabel
         Left = 2
         Top = 0
@@ -88,29 +96,44 @@ object FormMain: TFormMain
       end
       object LabelPasFile: TLabel
         Left = 2
-        Top = 76
+        Top = 109
         Width = 86
         Height = 13
         Caption = 'Target Pascal file:'
       end
       object LabelUses: TLabel
         Left = 2
-        Top = 120
+        Top = 153
         Width = 188
         Height = 13
         Caption = 'Comma-separated list of units to "use":'
       end
+      object LabelIgnoredHeaders: TLabel
+        Left = 2
+        Top = 67
+        Width = 297
+        Height = 13
+        Caption = 'Comma-separated list of files to "ignore" in headers Directory:'
+      end
+      object LabelCustomTypes: TLabel
+        Left = 2
+        Top = 195
+        Width = 103
+        Height = 13
+        Caption = 'Custom types map:'
+      end
       object EditHeaderFileDirectory: TEdit
         Left = 2
         Top = 15
-        Width = 384
+        Width = 469
         Height = 21
         Anchors = [akLeft, akTop, akRight]
         TabOrder = 0
         OnChange = EditHeaderFileDirectoryChange
+        ExplicitWidth = 384
       end
       object ButtonBrowseHeaderFileDirectory: TButton
-        Left = 389
+        Left = 474
         Top = 14
         Width = 33
         Height = 23
@@ -118,10 +141,11 @@ object FormMain: TFormMain
         Caption = '...'
         TabOrder = 1
         OnClick = ButtonBrowseHeaderFileDirectoryClick
+        ExplicitLeft = 389
       end
       object CheckBoxIncludeSubdiretories: TCheckBox
         Left = 2
-        Top = 42
+        Top = 45
         Width = 167
         Height = 17
         Caption = 'Include subdirectories'
@@ -130,41 +154,69 @@ object FormMain: TFormMain
       end
       object EditPasFile: TEdit
         Left = 2
-        Top = 91
-        Width = 384
+        Top = 124
+        Width = 469
         Height = 21
         Anchors = [akLeft, akTop, akRight]
         TabOrder = 3
         OnChange = EditPasFileChange
+        ExplicitWidth = 384
       end
       object ButtonBrowsePasFile: TButton
-        Left = 389
-        Top = 90
+        Left = 474
+        Top = 123
         Width = 33
         Height = 23
         Anchors = [akTop, akRight]
         Caption = '...'
         TabOrder = 4
         OnClick = ButtonBrowsePasFileClick
+        ExplicitLeft = 389
       end
       object EditUseUnits: TEdit
         Left = 2
-        Top = 135
-        Width = 418
+        Top = 168
+        Width = 503
         Height = 21
         Anchors = [akLeft, akTop, akRight]
         TabOrder = 5
         OnChange = EditUseUnitsChange
+        ExplicitWidth = 418
+      end
+      object EditIgnoredHeaders: TEdit
+        Left = 2
+        Top = 82
+        Width = 503
+        Height = 21
+        Hint = 
+          'eq. ".\subdir1\header1.h,subdir2\header2.h" or "header1.h,.\head' +
+          'er2.h"'
+        Anchors = [akLeft, akTop, akRight]
+        TabOrder = 6
+        OnChange = EditIgnoredHeadersChange
+        ExplicitWidth = 418
+      end
+      object MemoCustomTypesMap: TMemo
+        Left = 2
+        Top = 214
+        Width = 503
+        Height = 206
+        Anchors = [akLeft, akTop, akRight, akBottom]
+        TabOrder = 7
+        WantReturns = False
+        WordWrap = False
       end
     end
     object CardPlatforms: TCard
       Left = 4
       Top = 4
-      Width = 440
-      Height = 374
+      Width = 525
+      Height = 426
       Caption = 'Platforms'
       CardIndex = 1
       TabOrder = 4
+      ExplicitWidth = 440
+      ExplicitHeight = 374
       object LabelPlatform: TLabel
         Left = 6
         Top = 36
@@ -426,11 +478,13 @@ object FormMain: TFormMain
     object CardParseOptions: TCard
       Left = 4
       Top = 4
-      Width = 440
-      Height = 374
+      Width = 525
+      Height = 426
       Caption = 'Parse Options'
       CardIndex = 2
       TabOrder = 1
+      ExplicitWidth = 440
+      ExplicitHeight = 374
       object LabelCmdLineArgs: TLabel
         Left = 2
         Top = 23
@@ -492,11 +546,13 @@ object FormMain: TFormMain
     object CardConversionOptions: TCard
       Left = 4
       Top = 4
-      Width = 440
-      Height = 374
+      Width = 525
+      Height = 426
       Caption = 'Conversion Options'
       CardIndex = 3
       TabOrder = 3
+      ExplicitWidth = 440
+      ExplicitHeight = 374
       object LabelConvertChar: TLabel
         Left = 6
         Top = 61
@@ -686,16 +742,18 @@ object FormMain: TFormMain
     object CardIgnore: TCard
       Left = 4
       Top = 4
-      Width = 440
-      Height = 374
+      Width = 525
+      Height = 426
       Caption = 'Ignore'
       CardIndex = 4
       TabOrder = 5
+      ExplicitWidth = 440
+      ExplicitHeight = 374
       object LabelIgnore: TLabel
         AlignWithMargins = True
         Left = 6
         Top = 4
-        Width = 431
+        Width = 516
         Height = 26
         Margins.Left = 6
         Margins.Top = 4
@@ -711,8 +769,8 @@ object FormMain: TFormMain
         AlignWithMargins = True
         Left = 4
         Top = 33
-        Width = 432
-        Height = 337
+        Width = 517
+        Height = 389
         Margins.Left = 4
         Margins.Top = 0
         Margins.Right = 4
@@ -722,13 +780,15 @@ object FormMain: TFormMain
         TabOrder = 0
         WordWrap = False
         OnExit = MemoIgnoreExit
+        ExplicitWidth = 432
+        ExplicitHeight = 337
       end
     end
     object PostProcess: TCard
       Left = 4
       Top = 4
-      Width = 440
-      Height = 374
+      Width = 525
+      Height = 426
       Margins.Left = 5
       Margins.Top = 5
       Margins.Right = 5
@@ -736,14 +796,16 @@ object FormMain: TFormMain
       Caption = 'PostProcess'
       CardIndex = 5
       TabOrder = 6
+      ExplicitWidth = 440
+      ExplicitHeight = 374
       DesignSize = (
-        440
-        374)
+        525
+        426)
       object ScriptMemo: TMemo
-        Left = 0
-        Top = 42
-        Width = 660
-        Height = 519
+        Left = 4
+        Top = 48
+        Width = 745
+        Height = 571
         Margins.Left = 5
         Margins.Top = 5
         Margins.Right = 5
@@ -759,6 +821,8 @@ object FormMain: TFormMain
         ParentFont = False
         ScrollBars = ssBoth
         TabOrder = 0
+        ExplicitWidth = 660
+        ExplicitHeight = 519
       end
       object ButtonClearScript: TButton
         Left = 4
@@ -790,11 +854,13 @@ object FormMain: TFormMain
     object CardTranslate: TCard
       Left = 4
       Top = 4
-      Width = 440
-      Height = 374
+      Width = 525
+      Height = 426
       Caption = 'Translate'
       CardIndex = 6
       TabOrder = 2
+      ExplicitWidth = 440
+      ExplicitHeight = 374
       object ButtonRunTranslator: TButton
         Left = 2
         Top = 0
@@ -807,8 +873,8 @@ object FormMain: TFormMain
         AlignWithMargins = True
         Left = 2
         Top = 28
-        Width = 438
-        Height = 346
+        Width = 523
+        Height = 398
         Margins.Left = 2
         Margins.Top = 0
         Margins.Right = 0
@@ -817,13 +883,15 @@ object FormMain: TFormMain
         Anchors = [akLeft, akTop, akRight, akBottom]
         ScrollBars = ssVertical
         TabOrder = 1
+        ExplicitWidth = 438
+        ExplicitHeight = 346
       end
     end
   end
   object MainMenu: TMainMenu
     Images = ImageList
-    Left = 60
-    Top = 652
+    Left = 276
+    Top = 460
     object MenuFile: TMenuItem
       Caption = 'File'
       object MenuNew: TMenuItem
@@ -854,8 +922,8 @@ object FormMain: TFormMain
   end
   object ActionList: TActionList
     Images = ImageList
-    Left = 168
-    Top = 652
+    Left = 48
+    Top = 188
     object ActionAddCmdLineArg: TAction
       Category = 'Parse Options'
       Caption = 'Add Argument'
@@ -927,8 +995,8 @@ object FormMain: TFormMain
         FileMask = '*.h;*.hpp'
       end>
     Options = [fdoPickFolders, fdoPathMustExist]
-    Left = 168
-    Top = 544
+    Left = 32
+    Top = 336
   end
   object SaveDialogProject: TFileSaveDialog
     DefaultExtension = 'htrans'
@@ -940,8 +1008,8 @@ object FormMain: TFormMain
       end>
     Options = [fdoOverWritePrompt, fdoPathMustExist]
     Title = 'Save project file'
-    Left = 60
-    Top = 596
+    Left = 36
+    Top = 524
   end
   object SaveDialogPasFile: TFileSaveDialog
     DefaultExtension = 'htrans'
@@ -954,7 +1022,7 @@ object FormMain: TFormMain
     Options = [fdoOverWritePrompt, fdoPathMustExist]
     Title = 'Target Pascal file'
     Left = 168
-    Top = 596
+    Top = 412
   end
   object OpenDialogProject: TFileOpenDialog
     FavoriteLinks = <>
@@ -965,13 +1033,13 @@ object FormMain: TFormMain
       end>
     Options = [fdoPathMustExist, fdoFileMustExist]
     Title = 'Open project file'
-    Left = 60
-    Top = 544
+    Left = 44
+    Top = 440
   end
   object ImageList: TImageList
     ColorDepth = cd32Bit
-    Left = 256
-    Top = 652
+    Left = 176
+    Top = 532
     Bitmap = {
       494C010105004000040010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000002000000001002000000000000020

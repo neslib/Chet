@@ -1,3 +1,25 @@
+struct tag_BoxProps
+{
+  unsigned int  opaque       : 1;
+  unsigned int  fill_color   : 3;
+  unsigned int               : 4; // fill to 8 bits
+  unsigned int  show_border  : 1;
+  unsigned int  border_color : 3;
+  unsigned int  border_style : 2;
+  unsigned char              : 0; // fill to nearest byte (16 bits)
+  unsigned char width        : 4, // Split a byte into 2 fields of 4 bits
+                height       : 4;
+}BoxProps;
+
+
+struct tag_SCRIPT_DIGITSUBSTITUTE {
+    unsigned  NationalDigitLanguage    :16;   // Language for native substitution
+    unsigned  TraditionalDigitLanguage :16;   // Language for traditional substitution
+    unsigned  DigitSubstitute          :8;    // Substitution type
+    unsigned  dwReserved;                     // Reserved
+} SCRIPT_DIGITSUBSTITUTE;
+//
+
 /// Simple struct
 struct Struct1 {
     /// Comment for value

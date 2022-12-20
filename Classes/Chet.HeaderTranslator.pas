@@ -163,7 +163,8 @@ implementation
 uses
   Winapi.Windows,
   System.Types,
-  System.IOUtils;
+  System.IOUtils,
+  System.Masks;
 
 { THeaderTranslator }
 
@@ -353,7 +354,7 @@ procedure THeaderTranslator.CreateCombinedHeaderFile;
 var
   Option: TSearchOption;
   Writer: TStreamWriter;
-  HeaderFiles: TStringDynArray;
+  HeaderFiles,IgnoredFiles: TStringDynArray;
   HeaderPath, HeaderFile: String;
   I: Integer;
 begin
@@ -363,7 +364,26 @@ begin
     Option := TSearchOption.soTopDirectoryOnly;
 
   HeaderPath := IncludeTrailingPathDelimiter(FProject.HeaderFileDirectory);
-  HeaderFiles := TDirectory.GetFiles(HeaderPath, '*.h', Option);
+  IgnoredFiles := FProject.IgnoredFiles.Split([','],'"','"',TStringSplitOptions.ExcludeEmpty);
+
+  if Length(IgnoredFiles) = 0 then
+    HeaderFiles := TDirectory.GetFiles(HeaderPath, '*.h', Option)
+    else
+    HeaderFiles := TDirectory.GetFiles(HeaderPath, '*.h', Option,
+    function(const Path: string; const SearchRec: TSearchRec): Boolean
+    var
+      mask: string;
+    begin
+      for mask in IgnoredFiles do
+      begin
+        if MatchesMask(SearchRec.Name, mask) then
+          Exit(False);
+      end;
+
+      Result := True;
+    end
+  );
+
   if (Length(HeaderFiles) = 0) then
     raise EHeaderTranslatorError.CreateFmt('No C header files found in directory "%s".', [FProject.HeaderFileDirectory]);
 
@@ -1067,6 +1087,10 @@ begin
 end;
 
 procedure THeaderTranslator.SetupTypeMap;
+var
+  customTypePair: TPair<string,string>;
+  customTypes: TArray<string>;
+  i,n: Integer;
 begin
   FTypeMap.Add('size_t', 'NativeUInt');
   FTypeMap.Add('intptr_t', 'IntPtr');
@@ -1115,12 +1139,24 @@ begin
   // Type FILE the cannot be used in Delphi, so we convert to a Pointer.
   FTypeMap.Add('FILE', 'Pointer');
 
-  //  WinNT.h
-  FTypeMap.Add('WORD', 'UInt16');
-  FTypeMap.Add('DWORD', 'UInt32');
-  FTypeMap.Add('LONG', 'Int32');
-  FTypeMap.Add('ULONG', 'UInt32');
-  FTypeMap.Add('BYTE', 'Byte');
+  // attempt to add user-defined types, if any.
+  customTypes := FProject.CustomCTypesMap.Split([','],'"','"',TStringSplitOptions.ExcludeEmpty);
+  for i := 0  to High(customTypes) do
+  begin
+    customTypes[i] := customTypes[i].Replace(';','',[rfReplaceAll]).Trim.DeQuotedString('"');
+    n := customTypes[i].IndexOf('=');
+    if n < 0 then Continue;
+
+    customTypePair.Key := customTypes[i].Substring(0,n).DeQuotedString('"').Trim;
+    customTypePair.Value := customTypes[i].Substring(1+n).DeQuotedString('"').Trim;
+
+    if customTypePair.Key.IsEmpty or
+       customTypePair.Value.IsEmpty or
+       FTypeMap.ContainsKey(customTypePair.Key) then
+      Continue;
+
+    FTypeMap.TryAdd(customTypePair.Key,customTypePair.Value);
+  end;
 end;
 
 function THeaderTranslator.Spelling(const AType: TType): String;
@@ -2283,9 +2319,10 @@ end;
 procedure THeaderTranslator.WriteStructType(const ACursor: TCursor; const AIsUnion: Boolean);
 var
   T: TType;
-  FieldIndex, BitFieldCount: Integer;
-  StructName, FieldName, BitDataDelphiTypeName: String;
+  FieldIndex, BitFieldOffsetFromStructStart, BitFieldDataFieldCount, BitFieldCount: Integer;
+  StructName, FieldName: String;
   IsAnonymousStruct, IsFieldInited: Boolean;
+  BitFieldValueFieldName: string;
 begin
   T := ACursor.CursorType;
   if (not FWriter.IsAtSectionStart) then
@@ -2308,13 +2345,15 @@ begin
 
   FieldIndex := 0;
   BitFieldCount := 0;
+  BitFieldOffsetFromStructStart := 0;
   IsFieldInited := True;
-  BitDataDelphiTypeName := '';
+  BitFieldDataFieldCount := 0;
+
   T.VisitFields(
     function(const ACursor: TCursor): TVisitorResult
     var
       CursorType, PointeeType: TType;
-      OffsetOfField,BitWidth, BitIndex: Integer;
+      BitWidth, FieldOfset, BitIndex: Integer;
       DelphiTypeName: string;
     begin
       FCommentWriter.WriteComment(ACursor);
@@ -2327,25 +2366,63 @@ begin
 
       if ACursor.IsBitField then
       begin
-        if FieldIndex = 0 then
+        // https://en.cppreference.com/w/cpp/language/bit_field
+        // http://www.rvelthuis.de/articles/articles-convert.html#bitfields
+        // https://stackoverflow.com/questions/282019/how-to-simulate-bit-fields-in-delphi-records#282385
+        BitWidth := ACursor.FieldDeclBitWidth;
+        FieldOfset := BitFieldOffsetFromStructStart;
+        if BitFieldDataFieldCount > 0 then
+          Dec(FieldOfset, 32 * BitFieldDataFieldCount);
+        BitIndex := (FieldOfset shl 8) + BitWidth;
+
+        if (BitFieldCount = 0) or (BitFieldDataFieldCount > 0)  then
         begin
-          BitDataDelphiTypeName := DelphiTypeName;
+          BitFieldValueFieldName := 'Data' + BitFieldDataFieldCount.ToString;
+
           FWriter.WriteLn('private');
           FWriter.Indent;
-          FWriter.WriteLn('FData: '+DelphiTypeName+';');
-          FWriter.WriteLn('function GetBits(const aIndex: Integer): '+BitDataDelphiTypeName+';');
-          FWriter.WriteLn('procedure SetBits(const aIndex: Integer; const aValue: '+BitDataDelphiTypeName+');');
+          FWriter.WriteLn(BitFieldValueFieldName+': '+DelphiTypeName+';');
+          FWriter.WriteLn('function Get'+BitFieldValueFieldName+'Value(const aIndex: Integer): '+DelphiTypeName+';');
+          FWriter.WriteLn('procedure Set'+BitFieldValueFieldName+'Value(const aIndex: Integer; const aValue: '+DelphiTypeName+');');
           FWriter.Outdent;
           FWriter.WriteLn('public');
+
+          if FImplementation = nil then
+            FImplementation := TStringList.Create;
+          // todo: compatibility with "ancient" delphi versions?
+          FImplementation.Add('{'+StructName +'}');
+          FImplementation.Add('function '+StructName+'.Get'+BitFieldValueFieldName+'Value(const aIndex: Integer): '+DelphiTypeName+';');
+          FImplementation.Add('var');
+          FImplementation.Add('  BitCount, Offset, Mask: Integer;');
+          FImplementation.Add('begin');
+          FImplementation.Add('// {$UNDEF Q_temp}{$IFOPT Q+}{$DEFINE Q_temp}{$ENDIF}{$Q-} // disable OverFlowChecks');
+          FImplementation.Add('  BitCount := aIndex and $FF;');
+          FImplementation.Add('  Offset := aIndex shr 8;');
+          FImplementation.Add('  Mask := ((1 shl BitCount) - 1);');
+          FImplementation.Add('  Result := ('+BitFieldValueFieldName+' shr Offset) and Mask;');
+          FImplementation.Add('// {$IFDEF Q_temp}{$Q-}{$ENDIF}');
+          FImplementation.Add('end;'+ sLineBreak);
+
+          FImplementation.Add('procedure '+StructName+'.Set'+BitFieldValueFieldName+'Value(const aIndex: Integer; const aValue: '+DelphiTypeName+');');
+          FImplementation.Add('var');
+          FImplementation.Add('  BitCount, Offset, Mask: Integer;');
+          FImplementation.Add('begin');
+          FImplementation.Add('// {$UNDEF Q_temp}{$IFOPT Q+}{$DEFINE Q_temp}{$ENDIF}{$Q-} // disable OverFlowChecks');
+          FImplementation.Add('  BitCount := aIndex and $FF;');
+          FImplementation.Add('  Offset := aIndex shr 8;');
+          FImplementation.Add('  Mask := ((1 shl BitCount) - 1);');
+          FImplementation.Add('  '+BitFieldValueFieldName+' := ('+BitFieldValueFieldName+' and (not (Mask shl Offset))) or (aValue shl Offset);');
+          FImplementation.Add('// {$IFDEF Q_temp}{$Q-}{$ENDIF}');
+          FImplementation.Add('end;'+sLineBreak);
         end;
 
-        OffsetOfField := ACursor.OffsetOfField;
-        BitWidth := ACursor.FieldDeclBitWidth;
-        BitIndex := (OffsetOfField shl 8) + BitWidth;
         FWriter.Indent;
-        FWriter.WriteLn('property '+FieldName+': '+DelphiTypeName+' index $'+BitIndex.ToHexString(CursorType.Sizeof)+' read GetBits write SetBits; // '+BitWidth.ToString+' bits at offset '+OffsetOfField.ToString);
+        FWriter.WriteLn('property '+FieldName+': '+DelphiTypeName+' index $'+BitIndex.ToHexString(CursorType.Sizeof)+' read Get'+BitFieldValueFieldName+'Value write Set'+BitFieldValueFieldName+'Value; // '+BitWidth.ToString+' bits at offset '+FieldOfset.ToString +' in  '+ BitFieldValueFieldName);
         FWriter.Outdent;
         Inc(BitFieldCount);
+        Inc(BitFieldOffsetFromStructStart, BitWidth);
+        if BitFieldOffsetFromStructStart > 31 then
+          Inc(BitFieldDataFieldCount);
         IsFieldInited := False;
       end
       else
@@ -2382,41 +2459,6 @@ begin
 
   FWriter.Outdent;
   FWriter.WriteLn('end;');
-
-  if (BitFieldCount > 0) and (BitDataDelphiTypeName <> '') then
-  begin
-    if FImplementation = nil then
-      FImplementation := TStringList.Create;
-
-    FImplementation.Add('{$region '''+StructName + 'fields read/write''}');
-//    FImplementation.Add('(*');
-    FImplementation.Add('function '+StructName+'.GetBits(const aIndex: Integer): '+BitDataDelphiTypeName+';');
-    FImplementation.Add('var');
-    FImplementation.Add('  Offset, NrBits, Mask: Integer;');
-    FImplementation.Add('begin');
-    FImplementation.Add('{$UNDEF Q_temp}{$IFOPT Q+}{$DEFINE Q_temp}{$ENDIF}{$Q-} // disable OverFlowChecks');
-    FImplementation.Add('  NrBits := aIndex and $FF;');
-    FImplementation.Add('  Offset := aIndex shr 8;');
-    FImplementation.Add('  Mask := ((1 shl NrBits) - 1);');
-    FImplementation.Add('  Result := (FData shr Offset) and Mask;');
-    FImplementation.Add('{$IFDEF Q_temp}{$Q-}{$ENDIF}');
-    FImplementation.Add('end;'+ sLineBreak);
-
-    FImplementation.Add('procedure '+StructName+'.SetBits(const aIndex: Integer; const aValue: '+BitDataDelphiTypeName+');');
-    FImplementation.Add('var');
-    FImplementation.Add('  Offset, NrBits, Mask: Integer;');
-    FImplementation.Add('begin');
-    FImplementation.Add('{$UNDEF Q_temp}{$IFOPT Q+}{$DEFINE Q_temp}{$ENDIF}{$Q-} // disable OverFlowChecks');
-    FImplementation.Add('  NrBits := aIndex and $FF;');
-    FImplementation.Add('  Offset := aIndex shr 8;');
-    FImplementation.Add('  Mask := ((1 shl NrBits) - 1);');
-    FImplementation.Add('  Assert(aValue <= Mask);');
-    FImplementation.Add('  FData := (FData and (not (Mask shl Offset))) or (aValue shl Offset);');
-    FImplementation.Add('{$IFDEF Q_temp}{$Q-}{$ENDIF}');
-    FImplementation.Add('end;');
-    FImplementation.Add('{$endregion '''+StructName + ' fields read/write''}'+sLineBreak);
-//    FImplementation.Add('*)');
-  end;
 
   FWriter.WriteLn;
 end;

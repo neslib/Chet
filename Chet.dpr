@@ -11,7 +11,7 @@ uses
   Chet.HeaderTranslator in 'Classes\Chet.HeaderTranslator.pas',
   Chet.SourceWriter in 'Classes\Chet.SourceWriter.pas',
   Chet.CommentWriter in 'Classes\Chet.CommentWriter.pas',
-  Chet.CleanHeader in 'Classes\Chet.CleanHeader.pas',
+  Cnet.Postprocessor in 'Classes\Cnet.Postprocessor.pas',
   Form.ScriptHelp in 'Forms\Form.ScriptHelp.pas' {FormScriptHelp};
 
 {$R *.res}
