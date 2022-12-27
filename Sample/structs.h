@@ -1,3 +1,21 @@
+typedef struct {
+    unsigned int   langid                 :16; // Primary and sublanguage associated with script
+    unsigned int   fNumeric               :1;
+    unsigned int   fComplex               :1;  // Script requires special shaping or layout
+    unsigned int   fNeedsWordBreaking     :1;  // Requires ScriptBreak for word breaking information
+    unsigned int   fNeedsCaretInfo        :1;  // Requires caret restriction to cluster boundaries
+    unsigned int   bCharSet               :8;  // Charset to use when creating font
+    unsigned int   fControl               :1;  // Contains only control characters
+    unsigned int   fPrivateUseArea        :1;  // This item is from the Unicode range U+E000 through U+F8FF
+    unsigned int   fNeedsCharacterJustify :1;  // Requires inter-character justification
+    unsigned int   fInvalidGlyph          :1;  // Invalid combinations generate glyph wgInvalid in the glyph buffer
+    unsigned int   fInvalidLogAttr        :1;  // Invalid combinations are marked by fInvalid in the logical attributes
+    unsigned int   fCDM                   :1;  // Contains Combining Diacritical Marks
+    unsigned int   fAmbiguousCharSet      :1;  // Script does not correspond 1:1 with a charset
+    unsigned int   fClusterSizeVaries     :1;  // Measured cluster width depends on adjacent clusters
+    unsigned int   fRejectInvalid         :1;  // Invalid combinations should be rejected
+} SCRIPT_PROPERTIES;
+
 struct tag_BoxProps
 {
   unsigned int  opaque       : 1;

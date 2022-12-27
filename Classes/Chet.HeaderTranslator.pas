@@ -2319,9 +2319,9 @@ end;
 procedure THeaderTranslator.WriteStructType(const ACursor: TCursor; const AIsUnion: Boolean);
 var
   T: TType;
-  FieldIndex, BitFieldOffsetFromStructStart, BitFieldDataFieldCount, BitFieldCount: Integer;
+  FieldIndex, BitFieldOffsetFromStructStart, BitFieldDataFieldCount, BitFieldCount, BitMaxIndex: Integer;
   StructName, FieldName: String;
-  IsAnonymousStruct, IsFieldInited: Boolean;
+  IsAnonymousStruct, IsFieldInited, StartNewBitField: Boolean;
   BitFieldValueFieldName: string;
 begin
   T := ACursor.CursorType;
@@ -2347,6 +2347,8 @@ begin
   BitFieldCount := 0;
   BitFieldOffsetFromStructStart := 0;
   IsFieldInited := True;
+  StartNewBitField:= True;
+  BitMaxIndex := 31;
   BitFieldDataFieldCount := 0;
 
   T.VisitFields(
@@ -2370,12 +2372,15 @@ begin
         // http://www.rvelthuis.de/articles/articles-convert.html#bitfields
         // https://stackoverflow.com/questions/282019/how-to-simulate-bit-fields-in-delphi-records#282385
         BitWidth := ACursor.FieldDeclBitWidth;
+
         FieldOfset := BitFieldOffsetFromStructStart;
+        // emulate field alighnning
         if BitFieldDataFieldCount > 0 then
-          Dec(FieldOfset, 32 * BitFieldDataFieldCount);
+          FieldOfset := BitFieldOffsetFromStructStart - (BitFieldDataFieldCount*31);
+
         BitIndex := (FieldOfset shl 8) + BitWidth;
 
-        if (BitFieldCount = 0) or (BitFieldDataFieldCount > 0)  then
+        if StartNewBitField then
         begin
           BitFieldValueFieldName := 'Data' + BitFieldDataFieldCount.ToString;
 
@@ -2389,6 +2394,7 @@ begin
 
           if FImplementation = nil then
             FImplementation := TStringList.Create;
+
           // todo: compatibility with "ancient" delphi versions?
           FImplementation.Add('{'+StructName +'}');
           FImplementation.Add('function '+StructName+'.Get'+BitFieldValueFieldName+'Value(const aIndex: Integer): '+DelphiTypeName+';');
@@ -2414,6 +2420,7 @@ begin
           FImplementation.Add('  '+BitFieldValueFieldName+' := ('+BitFieldValueFieldName+' and (not (Mask shl Offset))) or (aValue shl Offset);');
           FImplementation.Add('// {$IFDEF Q_temp}{$Q-}{$ENDIF}');
           FImplementation.Add('end;'+sLineBreak);
+          StartNewBitField := false;
         end;
 
         FWriter.Indent;
@@ -2421,8 +2428,12 @@ begin
         FWriter.Outdent;
         Inc(BitFieldCount);
         Inc(BitFieldOffsetFromStructStart, BitWidth);
-        if BitFieldOffsetFromStructStart > 31 then
+        if BitFieldOffsetFromStructStart > BitMaxIndex then
+        begin
+          Inc(BitMaxIndex, 32);
           Inc(BitFieldDataFieldCount);
+          StartNewBitField := True;
+        end;
         IsFieldInited := False;
       end
       else
