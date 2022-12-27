@@ -2376,7 +2376,7 @@ begin
         FieldOfset := BitFieldOffsetFromStructStart;
         // emulate field alighnning
         if BitFieldDataFieldCount > 0 then
-          FieldOfset := BitFieldOffsetFromStructStart - (BitFieldDataFieldCount*31);
+          FieldOfset := BitFieldOffsetFromStructStart - (BitFieldDataFieldCount*32);
 
         BitIndex := (FieldOfset shl 8) + BitWidth;
 
