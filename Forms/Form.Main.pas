@@ -27,7 +27,8 @@ uses
   Vcl.Menus,
   Vcl.ActnList,
   Chet.Project,
-  Chet.HeaderTranslator;
+  Chet.HeaderTranslator
+  ;
 
 type
   TFormMain = class(TForm)
@@ -213,7 +214,7 @@ implementation
 
 {$R *.dfm}
 uses
-  Cnet.Postprocessor, Form.ScriptHelp;
+  Chet.Postprocessor, Form.ScriptHelp;
 
 procedure TFormMain.ActionAddCmdLineArgExecute(Sender: TObject);
 begin

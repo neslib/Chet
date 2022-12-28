@@ -65,6 +65,7 @@ type
     FSymbolsToIgnore: TDictionary<String, Integer>;
     FAnonymousTypes: TDictionary<String, Integer>;
     FWrittenTypeDefs: TDictionary<String, Integer>;
+    FWrittenStructs: TDictionary<String, Integer>;
     FWriter: TSourceWriter;
     FCommentWriter: TCommentWriter;
     FBuiltinTypes: array [Low(TTypeKind)..TTypeKind.LongDouble] of String;
@@ -342,6 +343,7 @@ begin
   FSymbolsToIgnore := TDictionary<String, Integer>.Create;
   FAnonymousTypes := TDictionary<String, Integer>.Create;
   FWrittenTypeDefs := TDictionary<String, Integer>.Create;
+  FWrittenStructs := TDictionary<String, Integer>.Create;
 
   SetupBuiltinTypes;
   SetupReservedWords;
@@ -419,6 +421,7 @@ end;
 
 destructor THeaderTranslator.Destroy;
 begin
+  FWrittenStructs.Free;
   FWrittenTypeDefs.Free;
   FAnonymousTypes.Free;
   FSymbolsToIgnore.Free;
@@ -518,7 +521,7 @@ var
   OrigType: TType;
   Kind: TTypeKind;
   StarCount: Integer;
-  Conv: String;
+  SymbolPrefix,SavedSymbolPrefix, Conv: String;
 begin
   if Assigned(AOutIsAnonymous) then
     AOutIsAnonymous^ := False;
@@ -583,7 +586,7 @@ begin
       AOutIsAnonymous^ := True;
   end;
 
-  var SymbolPrefix := FSymbolPrefix;
+  SymbolPrefix := FSymbolPrefix;
   if (FTypeMap.TryGetValue(Result, Conv)) then
   begin
     Result := Conv;
@@ -603,7 +606,7 @@ begin
   end
   else
   begin
-    var SavedSymbolPrefix := FSymbolPrefix;
+    SavedSymbolPrefix := FSymbolPrefix;
     FSymbolPrefix := SymbolPrefix;
     Result := MakePointerType(Result, StarCount);
     FSymbolPrefix := SavedSymbolPrefix;
@@ -1892,7 +1895,7 @@ end;
 procedure THeaderTranslator.WriteForwardTypeDeclarations;
 var
   Cursor: TCursor;
-  S: String;
+  SavedSymbolPrefix,S: String;
   First: Boolean;
   I, IndirectionCount: Integer;
   P: TPair<String, String>;
@@ -1986,7 +1989,7 @@ begin
   CheckIndirection(['double'], 'Double');
   CheckIndirection(['long double'], 'Extended');
 
-  var SavedSymbolPrefix := FSymbolPrefix;
+  SavedSymbolPrefix := FSymbolPrefix;
   FSymbolPrefix := '';
   for P in FTypeMap do
     CheckIndirection([P.Key], P.Value, 1);
@@ -2002,6 +2005,7 @@ begin
     if (S <> '') and (not FSymbolsToIgnore.ContainsKey(S)) then
     begin
       CheckFirst;
+
       FWriter.WriteLn('%s = Pointer;', [MakePointerType(S)]);
       FWriter.WriteLn('%s = ^%s;', [MakePointerType(S, 2), MakePointerType(S)]);
     end;
@@ -2042,6 +2046,8 @@ begin
         end;
     end;
   end;
+
+
   if (not First) then
     FWriter.WriteLn;
 end;
@@ -2328,9 +2334,12 @@ begin
   if (not FWriter.IsAtSectionStart) then
     FWriter.WriteLn;
 
-  FCommentWriter.WriteComment(ACursor);
   StructName := GetDelphiTypeName(T, False, @IsAnonymousStruct);
 
+  if FWrittenStructs.ContainsKey(StructName.ToLower) then
+    Exit;
+
+  FCommentWriter.WriteComment(ACursor);
   if IsAnonymousStruct then
     { Anonymous types aren't analyzed during the AnalyzeTypes phase, which means
       that there will not be forward declarations of pointer-to-struct types.
@@ -2358,8 +2367,6 @@ begin
       BitWidth, FieldOfset, BitIndex: Integer;
       DelphiTypeName: string;
     begin
-      FCommentWriter.WriteComment(ACursor);
-
       CursorType := ACursor.CursorType;
       DelphiTypeName := GetDelphiTypeName(CursorType);
       FieldName := ValidIdentifier(ACursor.Spelling);
@@ -2372,7 +2379,6 @@ begin
         // http://www.rvelthuis.de/articles/articles-convert.html#bitfields
         // https://stackoverflow.com/questions/282019/how-to-simulate-bit-fields-in-delphi-records#282385
         BitWidth := ACursor.FieldDeclBitWidth;
-
         FieldOfset := BitFieldOffsetFromStructStart;
         // emulate field alighnning
         if BitFieldDataFieldCount > 0 then
@@ -2383,7 +2389,6 @@ begin
         if StartNewBitField then
         begin
           BitFieldValueFieldName := 'Data' + BitFieldDataFieldCount.ToString;
-
           FWriter.WriteLn('private');
           FWriter.Indent;
           FWriter.WriteLn(BitFieldValueFieldName+': '+DelphiTypeName+';');
@@ -2395,34 +2400,37 @@ begin
           if FImplementation = nil then
             FImplementation := TStringList.Create;
 
-          // todo: compatibility with "ancient" delphi versions?
+          // todo: maybe need write code to compatibility with "ancient" delphi versions?
           FImplementation.Add('{'+StructName +'}');
           FImplementation.Add('function '+StructName+'.Get'+BitFieldValueFieldName+'Value(const aIndex: Integer): '+DelphiTypeName+';');
-          FImplementation.Add('var');
-          FImplementation.Add('  BitCount, Offset, Mask: Integer;');
+          FImplementation.Add('var BitCount, Offset, Mask: Integer;');
           FImplementation.Add('begin');
           FImplementation.Add('// {$UNDEF Q_temp}{$IFOPT Q+}{$DEFINE Q_temp}{$ENDIF}{$Q-} // disable OverFlowChecks');
+          FImplementation.Add('// {$UNDEF R_temp}{$IFOPT R+}{$DEFINE R_temp}{$ENDIF}{$R-} // disable RangeChecks');
           FImplementation.Add('  BitCount := aIndex and $FF;');
           FImplementation.Add('  Offset := aIndex shr 8;');
           FImplementation.Add('  Mask := ((1 shl BitCount) - 1);');
           FImplementation.Add('  Result := ('+BitFieldValueFieldName+' shr Offset) and Mask;');
           FImplementation.Add('// {$IFDEF Q_temp}{$Q-}{$ENDIF}');
+          FImplementation.Add('// {$IFDEF R_temp}{$R-}{$ENDIF}');
           FImplementation.Add('end;'+ sLineBreak);
 
           FImplementation.Add('procedure '+StructName+'.Set'+BitFieldValueFieldName+'Value(const aIndex: Integer; const aValue: '+DelphiTypeName+');');
-          FImplementation.Add('var');
-          FImplementation.Add('  BitCount, Offset, Mask: Integer;');
+          FImplementation.Add('var BitCount, Offset, Mask: Integer;');
           FImplementation.Add('begin');
           FImplementation.Add('// {$UNDEF Q_temp}{$IFOPT Q+}{$DEFINE Q_temp}{$ENDIF}{$Q-} // disable OverFlowChecks');
+          FImplementation.Add('// {$UNDEF R_temp}{$IFOPT R+}{$DEFINE R_temp}{$ENDIF}{$R-} // disable RangeChecks');
           FImplementation.Add('  BitCount := aIndex and $FF;');
           FImplementation.Add('  Offset := aIndex shr 8;');
           FImplementation.Add('  Mask := ((1 shl BitCount) - 1);');
           FImplementation.Add('  '+BitFieldValueFieldName+' := ('+BitFieldValueFieldName+' and (not (Mask shl Offset))) or (aValue shl Offset);');
           FImplementation.Add('// {$IFDEF Q_temp}{$Q-}{$ENDIF}');
+          FImplementation.Add('// {$IFDEF R_temp}{$R-}{$ENDIF}');
           FImplementation.Add('end;'+sLineBreak);
           StartNewBitField := false;
         end;
 
+        FCommentWriter.WriteComment(ACursor);
         FWriter.Indent;
         FWriter.WriteLn('property '+FieldName+': '+DelphiTypeName+' index $'+BitIndex.ToHexString(CursorType.Sizeof)+' read Get'+BitFieldValueFieldName+'Value write Set'+BitFieldValueFieldName+'Value; // '+BitWidth.ToString+' bits at offset '+FieldOfset.ToString +' in  '+ BitFieldValueFieldName);
         FWriter.Outdent;
@@ -2441,6 +2449,7 @@ begin
         if (AIsUnion) then
           FWriter.Write('  %d: (', [FieldIndex]);
 
+
         if (BitFieldCount > 0) and not IsFieldInited then
         begin
           FWriter.Indent;
@@ -2449,6 +2458,7 @@ begin
           IsFieldInited := True;
         end;
 
+        FCommentWriter.WriteComment(ACursor);
         FWriter.Write(FieldName);
         FWriter.Write(': ');
 
@@ -2472,6 +2482,8 @@ begin
   FWriter.WriteLn('end;');
 
   FWriter.WriteLn;
+
+  FWrittenStructs.Add(StructName.ToLower,0);
 end;
 
 procedure THeaderTranslator.WriteToDo(const AText: String);
@@ -2551,10 +2563,8 @@ begin
   end;
 
   DstName := Spelling(ACursor);
-  if FWrittenTypeDefs.ContainsKey(DstName) then
+  if FWrittenTypeDefs.ContainsKey(DstName.ToLower) then
     Exit;
-
-  FWrittenTypeDefs.Add(DstName, 0);
 
   { Check for "opaque" types, as in:
       typedef struct _Foo Foo;
@@ -2600,12 +2610,13 @@ begin
       } Foo;
   *)
   SrcName := GetDelphiTypeName(T);
-  if (DstName = SrcName) then
+  if DstName.ToLower = SrcName.ToLower then
     Exit;
 
   FCommentWriter.WriteComment(ACursor);
   FWriter.WriteLn('%s = %s;', [ValidIdentifier(DstName), SrcName]);
   WriteIndirections(DstName, SrcName);
+  FWrittenTypeDefs.Add(DstName.ToLower, 0);
 end;
 
 procedure THeaderTranslator.WriteTypes;
