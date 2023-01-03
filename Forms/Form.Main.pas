@@ -27,8 +27,7 @@ uses
   Vcl.Menus,
   Vcl.ActnList,
   Chet.Project,
-  Chet.HeaderTranslator
-  ;
+  Chet.HeaderTranslator;
 
 type
   TFormMain = class(TForm)
@@ -213,8 +212,10 @@ var
 implementation
 
 {$R *.dfm}
+
 uses
-  Chet.Postprocessor, Form.ScriptHelp;
+  Chet.Postprocessor,
+  Form.ScriptHelp;
 
 procedure TFormMain.ActionAddCmdLineArgExecute(Sender: TObject);
 begin
@@ -389,7 +390,7 @@ begin
   try
     LForm.ShowModal;
   finally
-    FreeAndNil(LForm);
+    LForm.Free;
   end;
 end;
 
@@ -552,6 +553,7 @@ begin
 
   if (ParamCount > 0) then
     Load(ParamStr(1));
+
   MemoCustomTypesMap.Hint := 'Input format: CTypeName=DelphiTypeName.'#13#10'Use CTRL + ENTER to insert new line.';
   MemoCustomTypesMap.OnChange := MemoCustomTypesMapChange;
 end;
@@ -657,6 +659,7 @@ function TFormMain.Save: Boolean;
 begin
   if (FProject.ProjectFilename = '') then
     Exit(SaveAs);
+
   FProject.Script := ScriptMemo.Lines.Text;
   FProject.Save(FProject.ProjectFilename);
   Result := True;

@@ -356,7 +356,7 @@ procedure THeaderTranslator.CreateCombinedHeaderFile;
 var
   Option: TSearchOption;
   Writer: TStreamWriter;
-  HeaderFiles,IgnoredFiles: TStringDynArray;
+  HeaderFiles, IgnoredFiles: TStringDynArray;
   HeaderPath, HeaderFile: String;
   I: Integer;
 begin
@@ -366,25 +366,24 @@ begin
     Option := TSearchOption.soTopDirectoryOnly;
 
   HeaderPath := IncludeTrailingPathDelimiter(FProject.HeaderFileDirectory);
-  IgnoredFiles := FProject.IgnoredFiles.Split([','],'"','"',TStringSplitOptions.ExcludeEmpty);
+  IgnoredFiles := FProject.IgnoredFiles.Split([','], '"', '"', TStringSplitOptions.ExcludeEmpty);
 
-  if Length(IgnoredFiles) = 0 then
+  if (Length(IgnoredFiles) = 0) then
     HeaderFiles := TDirectory.GetFiles(HeaderPath, '*.h', Option)
-    else
+  else
     HeaderFiles := TDirectory.GetFiles(HeaderPath, '*.h', Option,
-    function(const Path: string; const SearchRec: TSearchRec): Boolean
-    var
-      mask: string;
-    begin
-      for mask in IgnoredFiles do
+      function(const APath: String; const ASearchRec: TSearchRec): Boolean
+      var
+        Mask: String;
       begin
-        if MatchesMask(SearchRec.Name, mask) then
-          Exit(False);
-      end;
+        for Mask in IgnoredFiles do
+        begin
+          if MatchesMask(ASearchRec.Name, Mask) then
+            Exit(False);
+        end;
 
-      Result := True;
-    end
-  );
+        Result := True;
+      end);
 
   if (Length(HeaderFiles) = 0) then
     raise EHeaderTranslatorError.CreateFmt('No C header files found in directory "%s".', [FProject.HeaderFileDirectory]);
@@ -521,7 +520,7 @@ var
   OrigType: TType;
   Kind: TTypeKind;
   StarCount: Integer;
-  SymbolPrefix,SavedSymbolPrefix, Conv: String;
+  SymbolPrefix, SavedSymbolPrefix, Conv: String;
 begin
   if Assigned(AOutIsAnonymous) then
     AOutIsAnonymous^ := False;
@@ -727,15 +726,15 @@ begin
   if FProject.CommentConvert in [TCommentConvert.XmlDoc, TCommentConvert.PasDoc] then
   begin
     J := -1;
-    for I := 0 to Length(Args) -1 do
+    for I := 0 to Length(Args) - 1 do
     begin
-      if SameText(Args[I],'-fparse-all-comments') then
+      if SameText(Args[I], '-fparse-all-comments') then
       begin
         J := I;
         Break;
       end;
     end;
-    if J < 0 then
+    if (J < 0) then
       Args := Args + ['-fparse-all-comments'];
   end;
 
@@ -1091,9 +1090,9 @@ end;
 
 procedure THeaderTranslator.SetupTypeMap;
 var
-  customTypePair: TPair<string,string>;
-  customTypes: TArray<string>;
-  i,n: Integer;
+  CustomTypePair: TPair<String, String>;
+  CustomTypes: TArray<String>;
+  I, N: Integer;
 begin
   FTypeMap.Add('size_t', 'NativeUInt');
   FTypeMap.Add('intptr_t', 'IntPtr');
@@ -1143,22 +1142,24 @@ begin
   FTypeMap.Add('FILE', 'Pointer');
 
   // attempt to add user-defined types, if any.
-  customTypes := FProject.CustomCTypesMap.Split([','],'"','"',TStringSplitOptions.ExcludeEmpty);
-  for i := 0  to High(customTypes) do
+  CustomTypes := FProject.CustomCTypesMap.Split([','], '"', '"', TStringSplitOptions.ExcludeEmpty);
+  for I := 0 to High(CustomTypes) do
   begin
-    customTypes[i] := customTypes[i].Replace(';','',[rfReplaceAll]).Trim.DeQuotedString('"');
-    n := customTypes[i].IndexOf('=');
-    if n < 0 then Continue;
-
-    customTypePair.Key := customTypes[i].Substring(0,n).DeQuotedString('"').Trim;
-    customTypePair.Value := customTypes[i].Substring(1+n).DeQuotedString('"').Trim;
-
-    if customTypePair.Key.IsEmpty or
-       customTypePair.Value.IsEmpty or
-       FTypeMap.ContainsKey(customTypePair.Key) then
+    CustomTypes[I] := CustomTypes[I].Replace(';', '', [rfReplaceAll]).Trim.DeQuotedString('"');
+    N := CustomTypes[I].IndexOf('=');
+    if (N < 0) then
       Continue;
 
-    FTypeMap.TryAdd(customTypePair.Key,customTypePair.Value);
+    CustomTypePair.Key := CustomTypes[I].Substring(0, N).DeQuotedString('"').Trim;
+    CustomTypePair.Value := CustomTypes[I].Substring(1 + N).DeQuotedString('"').Trim;
+
+    if CustomTypePair.Key.IsEmpty
+      or CustomTypePair.Value.IsEmpty
+      or FTypeMap.ContainsKey(CustomTypePair.Key)
+    then
+      Continue;
+
+    FTypeMap.TryAdd(CustomTypePair.Key, CustomTypePair.Value);
   end;
 end;
 
@@ -1675,7 +1676,7 @@ begin
   FCommentWriter.WriteComment(ACursor);
 
   FWriter.Write(SVarName);
-  FWriter.Write(' : ');
+  FWriter.Write(': ');
 
   while TypeKind = TTypeKind.Pointer do
   begin
@@ -1895,7 +1896,7 @@ end;
 procedure THeaderTranslator.WriteForwardTypeDeclarations;
 var
   Cursor: TCursor;
-  SavedSymbolPrefix,S: String;
+  SavedSymbolPrefix, S: String;
   First: Boolean;
   I, IndirectionCount: Integer;
   P: TPair<String, String>;
@@ -2046,7 +2047,6 @@ begin
         end;
     end;
   end;
-
 
   if (not First) then
     FWriter.WriteLn;
@@ -2224,7 +2224,7 @@ end;
 
 procedure THeaderTranslator.WriteImplementation;
 var
-  Line: string;
+  Line: String;
 begin
   if (FImplementation <> nil) and (FImplementation.Count > 0) then
   begin
@@ -2328,16 +2328,16 @@ var
   FieldIndex, BitFieldOffsetFromStructStart, BitFieldDataFieldCount, BitFieldCount, BitMaxIndex: Integer;
   StructName, FieldName: String;
   IsAnonymousStruct, IsFieldInited, StartNewBitField: Boolean;
-  BitFieldValueFieldName: string;
+  BitFieldValueFieldName: String;
 begin
   T := ACursor.CursorType;
-  if (not FWriter.IsAtSectionStart) then
-    FWriter.WriteLn;
 
   StructName := GetDelphiTypeName(T, False, @IsAnonymousStruct);
-
   if FWrittenStructs.ContainsKey(StructName.ToLower) then
     Exit;
+
+  if (not FWriter.IsAtSectionStart) then
+    FWriter.WriteLn;
 
   FCommentWriter.WriteComment(ACursor);
   if IsAnonymousStruct then
@@ -2362,10 +2362,12 @@ begin
 
   T.VisitFields(
     function(const ACursor: TCursor): TVisitorResult
+    const
+      BIT_FIELD_TYPENAME = 'Cardinal';
     var
       CursorType, PointeeType: TType;
       BitWidth, FieldOfset, BitIndex: Integer;
-      DelphiTypeName: string;
+      DelphiTypeName: String;
     begin
       CursorType := ACursor.CursorType;
       DelphiTypeName := GetDelphiTypeName(CursorType);
@@ -2375,14 +2377,17 @@ begin
 
       if ACursor.IsBitField then
       begin
+        FWriter.Outdent; // Restore previous indent
+
         // https://en.cppreference.com/w/cpp/language/bit_field
         // http://www.rvelthuis.de/articles/articles-convert.html#bitfields
         // https://stackoverflow.com/questions/282019/how-to-simulate-bit-fields-in-delphi-records#282385
         BitWidth := ACursor.FieldDeclBitWidth;
         FieldOfset := BitFieldOffsetFromStructStart;
-        // emulate field alighnning
-        if BitFieldDataFieldCount > 0 then
-          FieldOfset := BitFieldOffsetFromStructStart - (BitFieldDataFieldCount*32);
+
+        // emulate field aligning
+        if (BitFieldDataFieldCount > 0) then
+          FieldOfset := BitFieldOffsetFromStructStart - (BitFieldDataFieldCount * 32);
 
         BitIndex := (FieldOfset shl 8) + BitWidth;
 
@@ -2391,58 +2396,62 @@ begin
           BitFieldValueFieldName := 'Data' + BitFieldDataFieldCount.ToString;
           FWriter.WriteLn('private');
           FWriter.Indent;
-          FWriter.WriteLn(BitFieldValueFieldName+': '+DelphiTypeName+';');
-          FWriter.WriteLn('function Get'+BitFieldValueFieldName+'Value(const aIndex: Integer): '+DelphiTypeName+';');
-          FWriter.WriteLn('procedure Set'+BitFieldValueFieldName+'Value(const aIndex: Integer; const aValue: '+DelphiTypeName+');');
+          FWriter.WriteLn(BitFieldValueFieldName + ': ' + BIT_FIELD_TYPENAME + ';');
+          FWriter.WriteLn('function Get' + BitFieldValueFieldName + 'Value(const AIndex: Integer): ' + BIT_FIELD_TYPENAME + ';');
+          FWriter.WriteLn('procedure Set' + BitFieldValueFieldName+'Value(const AIndex: Integer; const AValue: ' + BIT_FIELD_TYPENAME + ');');
           FWriter.Outdent;
           FWriter.WriteLn('public');
 
-          if FImplementation = nil then
+          if (FImplementation = nil) then
             FImplementation := TStringList.Create;
 
           // todo: maybe need write code to compatibility with "ancient" delphi versions?
-          FImplementation.Add('{'+StructName +'}');
-          FImplementation.Add('function '+StructName+'.Get'+BitFieldValueFieldName+'Value(const aIndex: Integer): '+DelphiTypeName+';');
-          FImplementation.Add('var BitCount, Offset, Mask: Integer;');
+          FImplementation.Add('{' + StructName + '}');
+          FImplementation.Add('');
+          FImplementation.Add('function ' + StructName + '.Get' + BitFieldValueFieldName + 'Value(const AIndex: Integer): ' + BIT_FIELD_TYPENAME + ';');
+          FImplementation.Add('var');
+          FImplementation.Add('  BitCount, Offset, Mask: Cardinal;');
           FImplementation.Add('begin');
-          FImplementation.Add('// {$UNDEF Q_temp}{$IFOPT Q+}{$DEFINE Q_temp}{$ENDIF}{$Q-} // disable OverFlowChecks');
-          FImplementation.Add('// {$UNDEF R_temp}{$IFOPT R+}{$DEFINE R_temp}{$ENDIF}{$R-} // disable RangeChecks');
-          FImplementation.Add('  BitCount := aIndex and $FF;');
-          FImplementation.Add('  Offset := aIndex shr 8;');
+//          FImplementation.Add('  {$UNDEF Q_temp}{$IFOPT Q+}{$DEFINE Q_temp}{$ENDIF}{$Q-} // disable OverFlowChecks');
+//          FImplementation.Add('  {$UNDEF R_temp}{$IFOPT R+}{$DEFINE R_temp}{$ENDIF}{$R-} // disable RangeChecks');
+          FImplementation.Add('  BitCount := AIndex and $FF;');
+          FImplementation.Add('  Offset := AIndex shr 8;');
           FImplementation.Add('  Mask := ((1 shl BitCount) - 1);');
-          FImplementation.Add('  Result := ('+BitFieldValueFieldName+' shr Offset) and Mask;');
-          FImplementation.Add('// {$IFDEF Q_temp}{$Q-}{$ENDIF}');
-          FImplementation.Add('// {$IFDEF R_temp}{$R-}{$ENDIF}');
-          FImplementation.Add('end;'+ sLineBreak);
+          FImplementation.Add('  Result := (' + BitFieldValueFieldName + ' shr Offset) and Mask;');
+//          FImplementation.Add('  {$IFDEF Q_temp}{$Q-}{$ENDIF}');
+//          FImplementation.Add('  {$IFDEF R_temp}{$R-}{$ENDIF}');
+          FImplementation.Add('end;' + sLineBreak);
 
-          FImplementation.Add('procedure '+StructName+'.Set'+BitFieldValueFieldName+'Value(const aIndex: Integer; const aValue: '+DelphiTypeName+');');
-          FImplementation.Add('var BitCount, Offset, Mask: Integer;');
+          FImplementation.Add('procedure ' + StructName + '.Set' + BitFieldValueFieldName + 'Value(const AIndex: Integer; const AValue: ' + BIT_FIELD_TYPENAME + ');');
+          FImplementation.Add('var');
+          FImplementation.Add('  BitCount, Offset, Mask: Cardinal;');
           FImplementation.Add('begin');
-          FImplementation.Add('// {$UNDEF Q_temp}{$IFOPT Q+}{$DEFINE Q_temp}{$ENDIF}{$Q-} // disable OverFlowChecks');
-          FImplementation.Add('// {$UNDEF R_temp}{$IFOPT R+}{$DEFINE R_temp}{$ENDIF}{$R-} // disable RangeChecks');
-          FImplementation.Add('  BitCount := aIndex and $FF;');
-          FImplementation.Add('  Offset := aIndex shr 8;');
+//          FImplementation.Add('  {$UNDEF Q_temp}{$IFOPT Q+}{$DEFINE Q_temp}{$ENDIF}{$Q-} // disable OverFlowChecks');
+//          FImplementation.Add('  {$UNDEF R_temp}{$IFOPT R+}{$DEFINE R_temp}{$ENDIF}{$R-} // disable RangeChecks');
+          FImplementation.Add('  BitCount := AIndex and $FF;');
+          FImplementation.Add('  Offset := AIndex shr 8;');
           FImplementation.Add('  Mask := ((1 shl BitCount) - 1);');
-          FImplementation.Add('  '+BitFieldValueFieldName+' := ('+BitFieldValueFieldName+' and (not (Mask shl Offset))) or (aValue shl Offset);');
-          FImplementation.Add('// {$IFDEF Q_temp}{$Q-}{$ENDIF}');
-          FImplementation.Add('// {$IFDEF R_temp}{$R-}{$ENDIF}');
-          FImplementation.Add('end;'+sLineBreak);
-          StartNewBitField := false;
+          FImplementation.Add('  ' + BitFieldValueFieldName + ' := (' + BitFieldValueFieldName + ' and (not (Mask shl Offset))) or (AValue shl Offset);');
+//          FImplementation.Add('  {$IFDEF Q_temp}{$Q-}{$ENDIF}');
+//          FImplementation.Add('  {$IFDEF R_temp}{$R-}{$ENDIF}');
+          FImplementation.Add('end;' + sLineBreak);
+          StartNewBitField := False;
         end;
 
         FCommentWriter.WriteComment(ACursor);
         FWriter.Indent;
-        FWriter.WriteLn('property '+FieldName+': '+DelphiTypeName+' index $'+BitIndex.ToHexString(CursorType.Sizeof)+' read Get'+BitFieldValueFieldName+'Value write Set'+BitFieldValueFieldName+'Value; // '+BitWidth.ToString+' bits at offset '+FieldOfset.ToString +' in  '+ BitFieldValueFieldName);
+        FWriter.WriteLn('property ' + FieldName + ': ' + BIT_FIELD_TYPENAME + ' index $' + BitIndex.ToHexString(CursorType.Sizeof) + ' read Get' + BitFieldValueFieldName + 'Value write Set' + BitFieldValueFieldName + 'Value; // ' + BitWidth.ToString + ' bits at offset ' + FieldOfset.ToString + ' in ' + BitFieldValueFieldName);
         FWriter.Outdent;
         Inc(BitFieldCount);
         Inc(BitFieldOffsetFromStructStart, BitWidth);
-        if BitFieldOffsetFromStructStart > BitMaxIndex then
+        if (BitFieldOffsetFromStructStart > BitMaxIndex) then
         begin
           Inc(BitMaxIndex, 32);
           Inc(BitFieldDataFieldCount);
           StartNewBitField := True;
         end;
         IsFieldInited := False;
+        FWriter.Indent;
       end
       else
       begin
@@ -2452,7 +2461,7 @@ begin
 
         if (BitFieldCount > 0) and not IsFieldInited then
         begin
-          FWriter.Indent;
+          FWriter.Outdent;
           FWriter.WriteLn('var'); // to avoid compile errors
           FWriter.Indent;
           IsFieldInited := True;
@@ -2480,10 +2489,9 @@ begin
 
   FWriter.Outdent;
   FWriter.WriteLn('end;');
-
   FWriter.WriteLn;
 
-  FWrittenStructs.Add(StructName.ToLower,0);
+  FWrittenStructs.Add(StructName.ToLower, 0);
 end;
 
 procedure THeaderTranslator.WriteToDo(const AText: String);
@@ -2610,7 +2618,7 @@ begin
       } Foo;
   *)
   SrcName := GetDelphiTypeName(T);
-  if DstName.ToLower = SrcName.ToLower then
+  if (DstName.ToLower = SrcName.ToLower) then
     Exit;
 
   FCommentWriter.WriteComment(ACursor);

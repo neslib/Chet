@@ -37,6 +37,15 @@ You can use the pre-compiled 64-bit Windows Chet application in the `Bin` direct
 
 If you want to compile Chet yourself, then you also need [libclang for Delphi](https://github.com/neslib/Neslib.Clang) and make sure the Delphi IDE can find it (the Chet project will find it automatically if the `Neslib.Clang` directory is at the same level as the `Chet` directory).
 
+## Contributions
+
+Thank you for these contributions:
+
+* [Michał Sznajder](https://github.com/michalsznajder) for improved Char conversions.
+* [Chiptamer](https://github.com/chiptamer) for adding support for typed const declarations.
+* [Jarrod Davis](https://github.com/jarroddavis68) for adding post-processing support.
+* [Alexey.t](https://github.com/alexeydott) for adding support for packed bit fields in C structs, user-defined type mappings, and the ability to ignore certain header files.
+
 ## User Guide
 
 Chet is pretty straightforward. In many cases, you only need to provide a directory with header files, the name of the output `.pas` file and select "Run Header Translator (F9)".

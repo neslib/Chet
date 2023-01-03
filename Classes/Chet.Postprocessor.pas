@@ -12,23 +12,25 @@ uses
 
 type
   { TFilePostProcessor }
-
   TFilePostProcessor = class
   protected
     FScripts: TStrings;
   public
     constructor Create; virtual;
     destructor Destroy; override;
-    procedure Process(const aFilename: string; aScript: TStrings);
-    class procedure Execute(aProject: TProject; aScript: TStrings);
+    procedure Process(const AFilename: String; const AScript: TStrings);
+    class procedure Execute(const AProject: TProject;
+      const AScript: TStrings); static;
   end;
 
 implementation
 
 uses
-  Windows, ScriptStringList;
+  Winapi.Windows,
+  ScriptStringList;
 
 { TFilePostProcessor }
+
 constructor TFilePostProcessor.Create;
 begin
   inherited;
@@ -37,43 +39,46 @@ end;
 
 destructor TFilePostProcessor.Destroy;
 begin
-  FreeAndNil(FScripts);
+  FScripts.Free;
   inherited;
 end;
 
-class procedure TFilePostProcessor.Execute(aProject: TProject; aScript: TStrings);
+class procedure TFilePostProcessor.Execute(const AProject: TProject;
+  const AScript: TStrings);
 var
-  LCleanHeader: TFilePostProcessor;
-  LCurDir,LProjDir: string;
+  CleanHeader: TFilePostProcessor;
+  CurDir, ProjDir: String;
 begin
-  LCleanHeader := TFilePostProcessor.Create;
+  CleanHeader := TFilePostProcessor.Create;
   try
-    LCurDir := TDirectory.GetCurrentDirectory;
+    CurDir := TDirectory.GetCurrentDirectory;
     try
-      LProjDir := aProject.ProjectFilename;
-      if not LProjDir.IsEmpty then
+      ProjDir := AProject.ProjectFilename;
+      if (not ProjDir.IsEmpty) then
       begin
-        LProjDir := TPath.GetDirectoryName(LProjDir);
-        TDirectory.SetCurrentDirectory(LProjDir);
-        LCleanHeader.Process(aProject.TargetPasFile, aScript);
+        ProjDir := TPath.GetDirectoryName(ProjDir);
+        TDirectory.SetCurrentDirectory(ProjDir);
+        CleanHeader.Process(AProject.TargetPasFile, AScript);
       end;
     finally
-      TDirectory.SetCurrentDirectory(LCurDir);
+      TDirectory.SetCurrentDirectory(CurDir);
     end;
   finally
-    FreeAndNil(LCleanHeader);
+    CleanHeader.Free;
   end;
 end;
 
-procedure TFilePostProcessor.Process(const aFilename: string; aScript: TStrings);
+procedure TFilePostProcessor.Process(const AFilename: String;
+  const AScript: TStrings);
 begin
-  if aFilename.IsEmpty or not TFile.Exists(aFilename) then Exit;
+  if (AFilename.IsEmpty) or (not TFile.Exists(AFilename)) then
+    Exit;
 
   TScriptStringList(FScripts).Clear;
-  FScripts.LoadFromFile(aFilename);
-  TScriptStringList(FScripts).AddScript(aScript);
+  FScripts.LoadFromFile(AFilename);
+  TScriptStringList(FScripts).AddScript(AScript);
   TScriptStringList(FScripts).RunScript;
-  FScripts.SaveToFile(aFilename);
+  FScripts.SaveToFile(AFilename);
 end;
 
 end.

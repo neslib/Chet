@@ -3,26 +3,31 @@ object FormScriptHelp: TFormScriptHelp
   Top = 0
   BorderIcons = [biSystemMenu]
   Caption = 'Script Help'
-  ClientHeight = 356
-  ClientWidth = 493
+  ClientHeight = 712
+  ClientWidth = 986
   Color = clBtnFace
   DoubleBuffered = True
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -12
+  Font.Height = -24
   Font.Name = 'Segoe UI'
   Font.Style = []
   Position = poMainFormCenter
   OnCreate = FormCreate
-  TextHeight = 15
+  PixelsPerInch = 192
+  TextHeight = 32
   object RichEdit: TRichEdit
     AlignWithMargins = True
-    Left = 3
-    Top = 3
-    Width = 487
-    Height = 331
+    Left = 6
+    Top = 6
+    Width = 974
+    Height = 662
+    Margins.Left = 6
+    Margins.Top = 6
+    Margins.Right = 6
+    Margins.Bottom = 6
     Align = alClient
-    Font.Charset = RUSSIAN_CHARSET
+    Font.Charset = ANSI_CHARSET
     Font.Color = clWindowText
     Font.Height = -18
     Font.Name = 'Segoe UI'
@@ -38,11 +43,15 @@ object FormScriptHelp: TFormScriptHelp
     WantReturns = False
     StyleName = 'Windows'
   end
-  object StatusBar1: TStatusBar
+  object StatusBar: TStatusBar
     Left = 0
-    Top = 337
-    Width = 493
-    Height = 19
+    Top = 674
+    Width = 986
+    Height = 38
+    Margins.Left = 6
+    Margins.Top = 6
+    Margins.Right = 6
+    Margins.Bottom = 6
     Panels = <>
   end
 end

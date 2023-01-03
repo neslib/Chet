@@ -186,10 +186,10 @@ type
     FUnconvertibleHandling: TUnconvertibleHandling;
 
     FSymbolsToIgnore: TStrings;
-    FScript: string;
+    FScript: String;
 
-    FIgnoredFiles: string;
-    FCustomCTypesMap: string;
+    FIgnoredFiles: String;
+    FCustomCTypesMap: String;
 
     procedure SetHeaderFileDirectory(const Value: String);
     procedure SetIncludeSubdirectories(const Value: Boolean);
@@ -213,10 +213,11 @@ type
     procedure SetEnumHandling(const Value: TEnumHandling);
     procedure SetUseUnits(const Value: String);
     procedure SetSymbolsToIgnore(const Value: TStrings);
-    procedure SetIgnoredFiles(const Value: string);
+    procedure SetIgnoredFiles(const AValue: String);
+    procedure SetCustomCTypesMap(const AValue: String);
+    procedure SetModified(const AValue: Boolean);
+  private
     procedure SymbolsToIgnoreChange(Sender: TObject);
-    procedure SetCustomCTypesMap(const Value: string);
-    procedure SetModified(const Value: Boolean);
   {$ENDREGION 'Internal Declarations'}
   public
     constructor Create;
@@ -280,7 +281,7 @@ type
 
     { Ignore this files in
       HeaderFileDirectory. }
-    property IgnoredFiles: string read FIgnoredFiles write SetIgnoredFiles;
+    property IgnoredFiles: String read FIgnoredFiles write SetIgnoredFiles;
 
     { Name of the Pascal file that will be generated.
       May contain a path relative to the current directory. }
@@ -334,8 +335,9 @@ type
 
     { Whether to treat Delphi directives as reserved words as well. }
     property TreatDirectivesAsReservedWords: Boolean read FTreatDirectivesAsReservedWords write SetTreatDirectivesAsReservedWords;
+
     { Comma separated list of pair CType=DelphiType. }
-    property CustomCTypesMap: string read FCustomCTypesMap write SetCustomCTypesMap;
+    property CustomCTypesMap: String read FCustomCTypesMap write SetCustomCTypesMap;
 
     {$IFDEF EXPERIMENTAL}
     { Whether to prefix all symbols in the resulting Pascal file with an
@@ -365,8 +367,9 @@ type
     { List of symbols (constants, types, functions) to ignore. These will not
       be translated. Symbols are case-sensitive. }
     property SymbolsToIgnore: TStrings read FSymbolsToIgnore write SetSymbolsToIgnore;
+
     { PostProcessing script}
-    property Script: string read FScript write FScript;
+    property Script: String read FScript write FScript;
   end;
 
 implementation
@@ -402,17 +405,19 @@ const // Ini Identifiers
   ID_LIBRARY_NAME = 'LibraryName';
   ID_PREFIX = 'Prefix';
   ID_LIBRARY_CONSTANT = 'LibraryConstant';
-  ID_EXCLUDEDHEADERS = 'ExcludedHeaders';
-  ID_CUSTOMCTYPESMAP = 'CTypesToDelphiMap';
+  ID_EXCLUDED_HEADERS = 'ExcludedHeaders';
+  ID_CUSTOM_CTYPES_MAP = 'CTypesToDelphiMap';
   ID_COUNT = 'Count';
   ID_ITEM = 'Item';
+  ID_SCRIPT = 'Script';
 
 type
   TCustomIniFileHelper = class helper for TCustomIniFile
   public
     function ReadEnum<T>(const ASection, AIdent: String; const ADefault: T): T;
     procedure WriteEnum<T>(const ASection, AIdent: String; const AValue: T);
-    function ReadStringBinary(const ASection, AIdent: String; const ADefault: string = ''): string;
+    function ReadStringBinary(const ASection, AIdent: String;
+      const ADefault: String = ''): String;
     procedure WriteStringBinary(const AValue, ASection, AIdent: String);
   end;
 
@@ -437,7 +442,8 @@ begin
   Move(I, Result, SizeOf(T));
 end;
 
-function TCustomIniFileHelper.ReadStringBinary(const ASection, AIdent, ADefault: string): string;
+function TCustomIniFileHelper.ReadStringBinary(const ASection, AIdent,
+  ADefault: String): String;
 var
   I: Integer;
   S: TMemoryStream;
@@ -452,8 +458,8 @@ begin
 
     S.Read(I, SizeOf(Integer));
     SetLength(Result, I);
-    if I > 0 then
-      S.Read(Result[1], I * SizeOf(Char));
+    if (I > 0) then
+      S.Read(Result[Low(String)], I * SizeOf(Char));
   finally
     S.Free;
   end;
@@ -475,7 +481,8 @@ begin
   WriteString(ASection, AIdent, S);
 end;
 
-procedure TCustomIniFileHelper.WriteStringBinary(const AValue, ASection, AIdent: String);
+procedure TCustomIniFileHelper.WriteStringBinary(const AValue, ASection,
+  AIdent: String);
 var
   I: Integer;
   S: TMemoryStream;
@@ -484,8 +491,8 @@ begin
   S := TMemoryStream.Create;
   try
     S.Write(I, SizeOf(I));
-    if I > 0 then
-      S.Write(AValue[1], I * SizeOf(AValue[1]));
+    if (I > 0) then
+      S.Write(AValue[Low(String)], I * SizeOf(Char));
     S.Position := 0;
     WriteBinaryStream(ASection, AIdent, S);
   finally
@@ -497,7 +504,7 @@ end;
 
 procedure TProject.AddCmdLineArg(const AArg: String);
 begin
-  if FCmdLineArgs.IndexOf(AArg) < 0 then
+  if (FCmdLineArgs.IndexOf(AArg) < 0) then
   begin
     FCmdLineArgs.Add(AArg);
     Modified := True;
@@ -570,8 +577,8 @@ begin
     FTargetPasFile := IniFile.ReadString(IS_PROJECT, ID_TARGET_PAS_FILE, '');
     FUseUnits := IniFile.ReadString(IS_PROJECT, ID_USE_UNITS, '');
     FLibraryConstant := IniFile.ReadString(IS_PROJECT, ID_LIBRARY_CONSTANT, '');
-    FIgnoredFiles := IniFile.ReadString(IS_PROJECT, ID_EXCLUDEDHEADERS, '');
-    FCustomCTypesMap := IniFile.ReadString(IS_PROJECT, ID_CUSTOMCTYPESMAP, '');
+    FIgnoredFiles := IniFile.ReadString(IS_PROJECT, ID_EXCLUDED_HEADERS, '');
+    FCustomCTypesMap := IniFile.ReadString(IS_PROJECT, ID_CUSTOM_CTYPES_MAP, '');
     for P := Low(TPlatformType) to High(TPlatformType) do
       FPlatforms[P].Load(IniFile);
 
@@ -598,7 +605,7 @@ begin
     if (FHeaderFileDirectory = '') then
       FHeaderFileDirectory := '.\';
 
-    FScript := IniFile.ReadStringBinary(IS_POSTPROCESS, 'Script','');
+    FScript := IniFile.ReadStringBinary(IS_POSTPROCESS, ID_SCRIPT, '');
 
     Modified := False;
     FProjectFilename := AFilename;
@@ -668,8 +675,8 @@ begin
     IniFile.WriteString(IS_PROJECT, ID_TARGET_PAS_FILE, FTargetPasFile);
     IniFile.WriteString(IS_PROJECT, ID_USE_UNITS, FUseUnits);
     IniFile.WriteString(IS_PROJECT, ID_LIBRARY_CONSTANT, FLibraryConstant);
-    IniFile.WriteString(IS_PROJECT, ID_EXCLUDEDHEADERS, FIgnoredFiles);
-    IniFile.WriteString(IS_PROJECT, ID_CUSTOMCTYPESMAP,FCustomCTypesMap);
+    IniFile.WriteString(IS_PROJECT, ID_EXCLUDED_HEADERS, FIgnoredFiles);
+    IniFile.WriteString(IS_PROJECT, ID_CUSTOM_CTYPES_MAP, FCustomCTypesMap);
 
     for P := Low(TPlatformType) to High(TPlatformType) do
       FPlatforms[P].Save(IniFile);
@@ -694,7 +701,7 @@ begin
     for I := 0 to FSymbolsToIgnore.Count - 1 do
       IniFile.WriteString(IS_IGNORE, ID_ITEM + I.ToString, FSymbolsToIgnore[I]);
 
-    IniFile.WriteStringBinary(IS_POSTPROCESS,'Script',FScript);
+    IniFile.WriteStringBinary(IS_POSTPROCESS, ID_SCRIPT, FScript);
 
     IniFile.UpdateFile;
     Modified := False;
@@ -740,11 +747,11 @@ begin
   end;
 end;
 
-procedure TProject.SetCustomCTypesMap(const Value: string);
+procedure TProject.SetCustomCTypesMap(const AValue: String);
 begin
-  if not SameText(FCustomCTypesMap,Value) then
+  if (not SameText(FCustomCTypesMap,AValue)) then
   begin
-    FCustomCTypesMap := Value;
+    FCustomCTypesMap := AValue;
     Modified := True;
   end;
 end;
@@ -767,12 +774,11 @@ begin
   end;
 end;
 
-procedure TProject.SetIgnoredFiles(const Value: string);
+procedure TProject.SetIgnoredFiles(const AValue: string);
 begin
-  FIgnoredFiles := Value;
-  if (FIgnoredFiles <> Value) then
+  if (FIgnoredFiles <> AValue) then
   begin
-    FIgnoredFiles := Value;
+    FIgnoredFiles := AValue;
     Modified := True;
   end;
 end;
@@ -819,9 +825,9 @@ begin
   end;
 end;
 
-procedure TProject.SetModified(const Value: Boolean);
+procedure TProject.SetModified(const AValue: Boolean);
 begin
-  FModified := Value;
+  FModified := AValue;
 end;
 
 {$IFDEF EXPERIMENTAL}

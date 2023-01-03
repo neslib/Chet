@@ -20,7 +20,7 @@ begin
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
   TStyleManager.TrySetStyle('Onyx Blue');
-  Application.Title := 'Htrans';
+  Application.Title := 'Chet';
   Application.CreateForm(TFormMain, FormMain);
   Application.Run;
 end.

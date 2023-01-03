@@ -1,7 +1,7 @@
 [Project]
 HeaderFileDirectory=.\
 IncludeSubdirs=1
-TargetPasFile=D:\develop\projects\cnet\Sample\sample.pas
+TargetPasFile=.\sample.pas
 UseUnits=
 LibraryConstant=LIB_SAMPLE
 ExcludedHeaders=usp10.h
