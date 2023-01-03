@@ -78,7 +78,7 @@ object FormMain: TFormMain
     Margins.Right = 6
     Margins.Bottom = 6
     Align = alClient
-    ActiveCard = CardConversionOptions
+    ActiveCard = CardPlatforms
     BevelOuter = bvNone
     Padding.Left = 8
     Padding.Top = 8
@@ -251,9 +251,10 @@ object FormMain: TFormMain
       Caption = 'Platforms'
       CardIndex = 1
       TabOrder = 4
+      ExplicitLeft = 12
       object LabelPlatform: TLabel
         Left = 12
-        Top = 72
+        Top = 136
         Width = 89
         Height = 27
         Margins.Left = 6
@@ -263,8 +264,8 @@ object FormMain: TFormMain
         Caption = 'Platform:'
       end
       object LabelLibrary: TLabel
-        Left = 240
-        Top = 72
+        Left = 236
+        Top = 136
         Width = 136
         Height = 27
         Margins.Left = 6
@@ -274,8 +275,8 @@ object FormMain: TFormMain
         Caption = 'Library name:'
       end
       object LabelPrefix: TLabel
-        Left = 616
-        Top = 72
+        Left = 760
+        Top = 136
         Width = 124
         Height = 27
         Margins.Left = 6
@@ -295,21 +296,43 @@ object FormMain: TFormMain
         Margins.Bottom = 6
         Caption = 'Library constant:'
       end
+      object LabelDebugDefine: TLabel
+        Left = 12
+        Top = 68
+        Width = 138
+        Height = 27
+        Margins.Left = 6
+        Margins.Top = 6
+        Margins.Right = 6
+        Margins.Bottom = 6
+        Caption = 'Debug define:'
+      end
+      object LabelDebugLibraryName: TLabel
+        Left = 502
+        Top = 132
+        Width = 200
+        Height = 27
+        Margins.Left = 6
+        Margins.Top = 6
+        Margins.Right = 6
+        Margins.Bottom = 6
+        Caption = 'Debug lib (optional):'
+      end
       object EditLibWin32: TEdit
         Left = 236
-        Top = 102
-        Width = 350
+        Top = 166
+        Width = 250
         Height = 35
         Margins.Left = 6
         Margins.Top = 6
         Margins.Right = 6
         Margins.Bottom = 6
-        TabOrder = 2
+        TabOrder = 3
         OnChange = EditLibraryNameChange
       end
       object CheckBoxWin32: TCheckBox
         Left = 12
-        Top = 106
+        Top = 170
         Width = 220
         Height = 34
         Margins.Left = 6
@@ -317,26 +340,26 @@ object FormMain: TFormMain
         Margins.Right = 6
         Margins.Bottom = 6
         Caption = '32-bit Windows'
-        TabOrder = 1
+        TabOrder = 2
         OnClick = CheckBoxPlatformClick
       end
       object EditLibWin64: TEdit
         Tag = 1
         Left = 236
-        Top = 156
-        Width = 350
+        Top = 220
+        Width = 250
         Height = 35
         Margins.Left = 6
         Margins.Top = 6
         Margins.Right = 6
         Margins.Bottom = 6
-        TabOrder = 5
+        TabOrder = 7
         OnChange = EditLibraryNameChange
       end
       object CheckBoxWin64: TCheckBox
         Tag = 1
         Left = 12
-        Top = 160
+        Top = 224
         Width = 220
         Height = 34
         Margins.Left = 6
@@ -344,13 +367,13 @@ object FormMain: TFormMain
         Margins.Right = 6
         Margins.Bottom = 6
         Caption = '64-bit Windows'
-        TabOrder = 4
+        TabOrder = 6
         OnClick = CheckBoxPlatformClick
       end
       object CheckBoxMacARM: TCheckBox
         Tag = 2
         Left = 12
-        Top = 214
+        Top = 278
         Width = 220
         Height = 34
         Margins.Left = 6
@@ -358,26 +381,26 @@ object FormMain: TFormMain
         Margins.Right = 6
         Margins.Bottom = 6
         Caption = 'ARM macOS'
-        TabOrder = 7
+        TabOrder = 10
         OnClick = CheckBoxPlatformClick
       end
       object EditLibMacARM: TEdit
         Tag = 2
         Left = 236
-        Top = 210
-        Width = 350
+        Top = 274
+        Width = 250
         Height = 35
         Margins.Left = 6
         Margins.Top = 6
         Margins.Right = 6
         Margins.Bottom = 6
-        TabOrder = 8
+        TabOrder = 11
         OnChange = EditLibraryNameChange
       end
       object CheckBoxLinux64: TCheckBox
         Tag = 4
         Left = 12
-        Top = 322
+        Top = 386
         Width = 220
         Height = 34
         Margins.Left = 6
@@ -385,26 +408,26 @@ object FormMain: TFormMain
         Margins.Right = 6
         Margins.Bottom = 6
         Caption = '64-bit Linux'
-        TabOrder = 13
+        TabOrder = 18
         OnClick = CheckBoxPlatformClick
       end
       object EditLibLinux64: TEdit
         Tag = 4
         Left = 236
-        Top = 318
-        Width = 350
+        Top = 382
+        Width = 250
         Height = 35
         Margins.Left = 6
         Margins.Top = 6
         Margins.Right = 6
         Margins.Bottom = 6
-        TabOrder = 14
+        TabOrder = 19
         OnChange = EditLibraryNameChange
       end
       object CheckBoxIOS: TCheckBox
         Tag = 5
         Left = 12
-        Top = 376
+        Top = 440
         Width = 220
         Height = 34
         Margins.Left = 6
@@ -412,26 +435,26 @@ object FormMain: TFormMain
         Margins.Right = 6
         Margins.Bottom = 6
         Caption = 'iOS'
-        TabOrder = 16
+        TabOrder = 22
         OnClick = CheckBoxPlatformClick
       end
       object EditLibIOS: TEdit
         Tag = 5
         Left = 236
-        Top = 372
-        Width = 350
+        Top = 436
+        Width = 250
         Height = 35
         Margins.Left = 6
         Margins.Top = 6
         Margins.Right = 6
         Margins.Bottom = 6
-        TabOrder = 17
+        TabOrder = 23
         OnChange = EditLibraryNameChange
       end
       object CheckBoxAndroid32: TCheckBox
         Tag = 6
         Left = 12
-        Top = 430
+        Top = 494
         Width = 220
         Height = 34
         Margins.Left = 6
@@ -439,51 +462,38 @@ object FormMain: TFormMain
         Margins.Right = 6
         Margins.Bottom = 6
         Caption = '32-bit Android'
-        TabOrder = 19
+        TabOrder = 26
         OnClick = CheckBoxPlatformClick
       end
       object EditLibAndroid32: TEdit
         Tag = 6
         Left = 236
-        Top = 426
-        Width = 350
+        Top = 490
+        Width = 250
         Height = 35
         Margins.Left = 6
         Margins.Top = 6
         Margins.Right = 6
         Margins.Bottom = 6
-        TabOrder = 20
+        TabOrder = 27
         OnChange = EditLibraryNameChange
       end
       object EditPrefixWin32: TEdit
-        Left = 612
-        Top = 102
+        Left = 760
+        Top = 166
         Width = 60
         Height = 35
         Margins.Left = 6
         Margins.Top = 6
         Margins.Right = 6
         Margins.Bottom = 6
-        TabOrder = 3
+        TabOrder = 5
         OnChange = EditPrefixChange
       end
       object EditPrefixWin64: TEdit
         Tag = 1
-        Left = 612
-        Top = 156
-        Width = 60
-        Height = 35
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
-        TabOrder = 6
-        OnChange = EditPrefixChange
-      end
-      object EditPrefixMacARM: TEdit
-        Tag = 2
-        Left = 612
-        Top = 210
+        Left = 760
+        Top = 220
         Width = 60
         Height = 35
         Margins.Left = 6
@@ -493,36 +503,23 @@ object FormMain: TFormMain
         TabOrder = 9
         OnChange = EditPrefixChange
       end
+      object EditPrefixMacARM: TEdit
+        Tag = 2
+        Left = 760
+        Top = 274
+        Width = 60
+        Height = 35
+        Margins.Left = 6
+        Margins.Top = 6
+        Margins.Right = 6
+        Margins.Bottom = 6
+        TabOrder = 13
+        OnChange = EditPrefixChange
+      end
       object EditPrefixLinux64: TEdit
         Tag = 4
-        Left = 612
-        Top = 318
-        Width = 60
-        Height = 35
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
-        TabOrder = 15
-        OnChange = EditPrefixChange
-      end
-      object EditPrefixIOS: TEdit
-        Tag = 5
-        Left = 612
-        Top = 372
-        Width = 60
-        Height = 35
-        Margins.Left = 6
-        Margins.Top = 6
-        Margins.Right = 6
-        Margins.Bottom = 6
-        TabOrder = 18
-        OnChange = EditPrefixChange
-      end
-      object EditPrefixAndroid32: TEdit
-        Tag = 6
-        Left = 612
-        Top = 426
+        Left = 760
+        Top = 382
         Width = 60
         Height = 35
         Margins.Left = 6
@@ -530,6 +527,32 @@ object FormMain: TFormMain
         Margins.Right = 6
         Margins.Bottom = 6
         TabOrder = 21
+        OnChange = EditPrefixChange
+      end
+      object EditPrefixIOS: TEdit
+        Tag = 5
+        Left = 760
+        Top = 436
+        Width = 60
+        Height = 35
+        Margins.Left = 6
+        Margins.Top = 6
+        Margins.Right = 6
+        Margins.Bottom = 6
+        TabOrder = 25
+        OnChange = EditPrefixChange
+      end
+      object EditPrefixAndroid32: TEdit
+        Tag = 6
+        Left = 760
+        Top = 490
+        Width = 60
+        Height = 35
+        Margins.Left = 6
+        Margins.Top = 6
+        Margins.Right = 6
+        Margins.Bottom = 6
+        TabOrder = 29
         OnChange = EditPrefixChange
       end
       object EditLibConstant: TEdit
@@ -547,7 +570,7 @@ object FormMain: TFormMain
       object CheckBoxMacIntel: TCheckBox
         Tag = 3
         Left = 12
-        Top = 268
+        Top = 332
         Width = 220
         Height = 34
         Margins.Left = 6
@@ -555,39 +578,39 @@ object FormMain: TFormMain
         Margins.Right = 6
         Margins.Bottom = 6
         Caption = 'Intel macOS'
-        TabOrder = 10
+        TabOrder = 14
         OnClick = CheckBoxPlatformClick
       end
       object EditLibMacIntel: TEdit
         Tag = 3
         Left = 236
-        Top = 264
-        Width = 350
+        Top = 328
+        Width = 250
         Height = 35
         Margins.Left = 6
         Margins.Top = 6
         Margins.Right = 6
         Margins.Bottom = 6
-        TabOrder = 11
+        TabOrder = 15
         OnChange = EditLibraryNameChange
       end
       object EditPrefixMacIntel: TEdit
         Tag = 3
-        Left = 612
-        Top = 264
+        Left = 760
+        Top = 328
         Width = 60
         Height = 35
         Margins.Left = 6
         Margins.Top = 6
         Margins.Right = 6
         Margins.Bottom = 6
-        TabOrder = 12
+        TabOrder = 17
         OnChange = EditPrefixChange
       end
       object CheckBoxAndroid64: TCheckBox
         Tag = 7
         Left = 12
-        Top = 484
+        Top = 548
         Width = 220
         Height = 34
         Margins.Left = 6
@@ -595,34 +618,149 @@ object FormMain: TFormMain
         Margins.Right = 6
         Margins.Bottom = 6
         Caption = '64-bit Android'
-        TabOrder = 22
+        TabOrder = 30
         OnClick = CheckBoxPlatformClick
       end
       object EditLibAndroid64: TEdit
         Tag = 7
         Left = 236
-        Top = 480
-        Width = 350
+        Top = 544
+        Width = 250
         Height = 35
         Margins.Left = 6
         Margins.Top = 6
         Margins.Right = 6
         Margins.Bottom = 6
-        TabOrder = 23
+        TabOrder = 31
         OnChange = EditLibraryNameChange
       end
       object EditPrefixAndroid64: TEdit
         Tag = 7
-        Left = 612
-        Top = 480
+        Left = 760
+        Top = 544
         Width = 60
         Height = 35
         Margins.Left = 6
         Margins.Top = 6
         Margins.Right = 6
         Margins.Bottom = 6
-        TabOrder = 24
+        TabOrder = 33
         OnChange = EditPrefixChange
+      end
+      object EditDebugDefine: TEdit
+        Left = 236
+        Top = 62
+        Width = 350
+        Height = 35
+        Margins.Left = 6
+        Margins.Top = 6
+        Margins.Right = 6
+        Margins.Bottom = 6
+        TabOrder = 1
+        OnChange = EditDebugDefineChange
+      end
+      object EditLibDbgAndroid64: TEdit
+        Tag = 7
+        Left = 498
+        Top = 544
+        Width = 250
+        Height = 35
+        Margins.Left = 6
+        Margins.Top = 6
+        Margins.Right = 6
+        Margins.Bottom = 6
+        TabOrder = 32
+        OnChange = EditDebugLibraryNameChange
+      end
+      object EditLibDbgAndroid32: TEdit
+        Tag = 6
+        Left = 498
+        Top = 490
+        Width = 250
+        Height = 35
+        Margins.Left = 6
+        Margins.Top = 6
+        Margins.Right = 6
+        Margins.Bottom = 6
+        TabOrder = 28
+        OnChange = EditDebugLibraryNameChange
+      end
+      object EditLibDbgIOS: TEdit
+        Tag = 5
+        Left = 498
+        Top = 436
+        Width = 250
+        Height = 35
+        Margins.Left = 6
+        Margins.Top = 6
+        Margins.Right = 6
+        Margins.Bottom = 6
+        TabOrder = 24
+        OnChange = EditDebugLibraryNameChange
+      end
+      object EditLibDbgLinux64: TEdit
+        Tag = 4
+        Left = 498
+        Top = 382
+        Width = 250
+        Height = 35
+        Margins.Left = 6
+        Margins.Top = 6
+        Margins.Right = 6
+        Margins.Bottom = 6
+        TabOrder = 20
+        OnChange = EditDebugLibraryNameChange
+      end
+      object EditLibDbgMacIntel: TEdit
+        Tag = 3
+        Left = 498
+        Top = 328
+        Width = 250
+        Height = 35
+        Margins.Left = 6
+        Margins.Top = 6
+        Margins.Right = 6
+        Margins.Bottom = 6
+        TabOrder = 16
+        OnChange = EditDebugLibraryNameChange
+      end
+      object EditLibDbgMacARM: TEdit
+        Tag = 2
+        Left = 498
+        Top = 274
+        Width = 250
+        Height = 35
+        Margins.Left = 6
+        Margins.Top = 6
+        Margins.Right = 6
+        Margins.Bottom = 6
+        TabOrder = 12
+        OnChange = EditDebugLibraryNameChange
+      end
+      object EditLibDbgWin64: TEdit
+        Tag = 1
+        Left = 498
+        Top = 220
+        Width = 250
+        Height = 35
+        Margins.Left = 6
+        Margins.Top = 6
+        Margins.Right = 6
+        Margins.Bottom = 6
+        TabOrder = 8
+        OnChange = EditDebugLibraryNameChange
+      end
+      object EditLibDbgWin32: TEdit
+        Left = 498
+        Top = 166
+        Width = 250
+        Height = 35
+        Margins.Left = 6
+        Margins.Top = 6
+        Margins.Right = 6
+        Margins.Bottom = 6
+        TabOrder = 4
+        OnChange = EditDebugLibraryNameChange
       end
     end
     object CardParseOptions: TCard
@@ -735,8 +873,6 @@ object FormMain: TFormMain
       Caption = 'Conversion Options'
       CardIndex = 3
       TabOrder = 3
-      ExplicitLeft = -200
-      ExplicitTop = 88
       DesignSize = (
         1050
         852)
@@ -1051,7 +1187,7 @@ object FormMain: TFormMain
           'be translated. Enter one symbol per line. Symbols are case-sensi' +
           'tive.'
         WordWrap = True
-        ExplicitWidth = 969
+        ExplicitWidth = 1017
       end
       object MemoIgnore: TMemo
         AlignWithMargins = True

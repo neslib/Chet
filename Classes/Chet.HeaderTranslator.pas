@@ -2275,7 +2275,12 @@ var
   First: Boolean;
   PT: TPlatformType;
   P: TPlatform;
+  DebugDefine: String;
 begin
+  DebugDefine := FProject.DebugDefine.Trim;
+  if (DebugDefine = '') then
+    DebugDefine := 'DEBUG';
+
   First := True;
   FWriter.StartSection('const');
 
@@ -2300,7 +2305,16 @@ begin
 
       FWriter.WriteLn(')}');
 
-      FWriter.WriteLn('%s%s = ''%s'';', [FSymbolPrefix, FProject.LibraryConstant, P.LibraryName]);
+      if (P.DebugLibraryName = '') then
+      begin
+        FWriter.WriteLn('%s%s = ''%s'';',
+          [FSymbolPrefix, FProject.LibraryConstant, P.LibraryName])
+      end
+      else
+      begin
+        FWriter.WriteLn('%s%s = {$IFDEF %s}''%s''{$ELSE}''%s''{$ENDIF};',
+          [FSymbolPrefix, FProject.LibraryConstant, DebugDefine, P.DebugLibraryName, P.LibraryName]);
+      end;
       FWriter.WriteLn('_PU = ''%s'';', [P.Prefix]);
     end;
   end;

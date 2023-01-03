@@ -140,6 +140,17 @@ type
     EditIgnoredHeaders: TEdit;
     LabelCustomTypes: TLabel;
     MemoCustomTypesMap: TMemo;
+    EditDebugDefine: TEdit;
+    LabelDebugDefine: TLabel;
+    EditLibDbgAndroid64: TEdit;
+    EditLibDbgAndroid32: TEdit;
+    EditLibDbgIOS: TEdit;
+    EditLibDbgLinux64: TEdit;
+    EditLibDbgMacIntel: TEdit;
+    EditLibDbgMacARM: TEdit;
+    EditLibDbgWin64: TEdit;
+    EditLibDbgWin32: TEdit;
+    LabelDebugLibraryName: TLabel;
     procedure ButtonGroupCategoriesButtonClicked(Sender: TObject; Index: Integer);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure ActionAddCmdLineArgExecute(Sender: TObject);
@@ -179,11 +190,14 @@ type
     procedure ButtonScriptHelpClick(Sender: TObject);    
     procedure EditIgnoredHeadersChange(Sender: TObject);
     procedure MemoCustomTypesMapChange(Sender: TObject);
+    procedure EditDebugDefineChange(Sender: TObject);
+    procedure EditDebugLibraryNameChange(Sender: TObject);
   private
     { Private declarations }
     FProject: TProject;
     FPlatformEnabled: array [TPlatformType] of TCheckBox;
     FPlatformLibraryName: array [TPlatformType] of TEdit;
+    FPlatformDebugLibraryName: array [TPlatformType] of TEdit;
     FPlatformPrefix: array [TPlatformType] of TEdit;
     procedure NewProject(const AProjectName: String);
     function CheckSave: Boolean;
@@ -542,6 +556,15 @@ begin
   FPlatformLibraryName[TPlatformType.Android32] := EditLibAndroid32;
   FPlatformLibraryName[TPlatformType.Android64] := EditLibAndroid64;
 
+  FPlatformDebugLibraryName[TPlatformType.Win32] := EditLibDbgWin32;
+  FPlatformDebugLibraryName[TPlatformType.Win64] := EditLibDbgWin64;
+  FPlatformDebugLibraryName[TPlatformType.MacARM] := EditLibDbgMacARM;
+  FPlatformDebugLibraryName[TPlatformType.MacIntel] := EditLibDbgMacIntel;
+  FPlatformDebugLibraryName[TPlatformType.Linux64] := EditLibDbgLinux64;
+  FPlatformDebugLibraryName[TPlatformType.iOS] := EditLibDbgIOS;
+  FPlatformDebugLibraryName[TPlatformType.Android32] := EditLibDbgAndroid32;
+  FPlatformDebugLibraryName[TPlatformType.Android64] := EditLibDbgAndroid64;
+
   FPlatformPrefix[TPlatformType.Win32] := EditPrefixWin32;
   FPlatformPrefix[TPlatformType.Win64] := EditPrefixWin64;
   FPlatformPrefix[TPlatformType.MacARM] := EditPrefixMacARM;
@@ -562,6 +585,21 @@ destructor TFormMain.Destroy;
 begin
   FProject.Free;
   inherited;
+end;
+
+procedure TFormMain.EditDebugDefineChange(Sender: TObject);
+begin
+  FProject.DebugDefine := EditDebugDefine.Text;
+end;
+
+procedure TFormMain.EditDebugLibraryNameChange(Sender: TObject);
+var
+  Edit: TEdit;
+  PT: TPlatformType;
+begin
+  Edit := Sender as TEdit;
+  PT := TPlatformType(Edit.Tag);
+  FProject.Platforms[PT].DebugLibraryName := Edit.Text;
 end;
 
 procedure TFormMain.EditHeaderFileDirectoryChange(Sender: TObject);
@@ -705,7 +743,8 @@ begin
   MemoCustomTypesMap.Lines.Commatext := FProject.CustomCTypesMap;
 
   EditLibConstant.Text := FProject.LibraryConstant;
-  
+  EditDebugDefine.Text := FProject.DebugDefine;
+
   SetPlatformControls;
 
   UpdateCaption;
@@ -726,6 +765,7 @@ begin
     P := FProject.Platforms[PT];
     FPlatformEnabled[PT].Checked := P.Enabled;
     FPlatformLibraryName[PT].Text := P.LibraryName;
+    FPlatformDebugLibraryName[PT].Text := P.DebugLibraryName;
     FPlatformPrefix[PT].Text := P.Prefix;
   end;
 end;
@@ -760,6 +800,7 @@ var
 begin
   B := FPlatformEnabled[APlatform].Checked;
   FPlatformLibraryName[APlatform].Enabled := B;
+  FPlatformDebugLibraryName[APlatform].Enabled := B;
   FPlatformPrefix[APlatform].Enabled := B;
 end;
 

@@ -118,9 +118,11 @@ type
     FPlatformType: TPlatformType;
     FEnabled: Boolean;
     FLibraryName: String;
+    FDebugLibraryName: String;
     FPrefix: String;
     procedure SetEnabled(const AValue: Boolean);
     procedure SetLibraryName(const AValue: String);
+    procedure SetDebugLibraryName(const AValue: String);
     procedure SetPrefix(const AValue: String);
   public
     constructor Create(const AProject: TProject;
@@ -149,6 +151,11 @@ type
     { The name of the (dynamic or static) library for this platform. }
     property LibraryName: String read FLibraryName write SetLibraryName;
 
+    { Optional name of the (dynamic or static) library containing a DEBUG build
+      for this platform. This version of the library will be used if the
+      application is built with a define that is set in TProject.DebugDefine. }
+    property DebugLibraryName: String read FDebugLibraryName write SetDebugLibraryName;
+
     { The function name prefix to use for this platform. Usually an empty
       string, but on some platforms, each function will have a '_' prefix. }
     property Prefix: String read FPrefix write SetPrefix;
@@ -167,6 +174,7 @@ type
     FUseUnits: String;
 
     FLibraryConstant: String;
+    FDebugDefine: String;
     FPlatforms: array [TPlatformType] of TPlatform;
 
     FIgnoreParseErrors: Boolean;
@@ -210,6 +218,7 @@ type
     procedure SetUnconvertibleHandling(const Value: TUnconvertibleHandling);
     function GetPlatform(const AIndex: TPlatformType): TPlatform;
     procedure SetLibraryConstant(const Value: String);
+    procedure SetDebugDefine(const Value: String);
     procedure SetEnumHandling(const Value: TEnumHandling);
     procedure SetUseUnits(const Value: String);
     procedure SetSymbolsToIgnore(const Value: TStrings);
@@ -298,6 +307,15 @@ type
       const
         LIB_MYLIB = 'mylib.dll' }
     property LibraryConstant: String read FLibraryConstant write SetLibraryConstant;
+
+    (*The name of the define that is used to link to Debug versions of the
+      library. For example, if there are is a debug version of the 'mylib.dll'
+      library called 'mylib_debug.dll', and DebugDefine is set to 'DEBUG_LIBS',
+      then the following code will be generated:
+
+      const
+        LIB_MYLIB = {$IFDEF DEBUG_LIBS}'mylib_debug.dll'{ELSE}'mylib.dll'{$ENDIF} *)
+    property DebugDefine: String read FDebugDefine write SetDebugDefine;
 
     { Information about each of the supported platforms }
     property Platforms[const AIndex: TPlatformType]: TPlatform read GetPlatform;
@@ -403,10 +421,12 @@ const // Ini Identifiers
   ID_UNCONVERTIBLE_HANDLING = 'UnconvertibleHandling';
   ID_ENABLED = 'Enabled';
   ID_LIBRARY_NAME = 'LibraryName';
+  ID_DEBUG_LIBRARY_NAME = 'DebugLibraryName';
   ID_PREFIX = 'Prefix';
   ID_LIBRARY_CONSTANT = 'LibraryConstant';
   ID_EXCLUDED_HEADERS = 'ExcludedHeaders';
   ID_CUSTOM_CTYPES_MAP = 'CTypesToDelphiMap';
+  ID_DEBUG_DEFINE = 'DebugDefine';
   ID_COUNT = 'Count';
   ID_ITEM = 'Item';
   ID_SCRIPT = 'Script';
@@ -577,6 +597,7 @@ begin
     FTargetPasFile := IniFile.ReadString(IS_PROJECT, ID_TARGET_PAS_FILE, '');
     FUseUnits := IniFile.ReadString(IS_PROJECT, ID_USE_UNITS, '');
     FLibraryConstant := IniFile.ReadString(IS_PROJECT, ID_LIBRARY_CONSTANT, '');
+    FDebugDefine := IniFile.ReadString(IS_PROJECT, ID_DEBUG_DEFINE, '');
     FIgnoredFiles := IniFile.ReadString(IS_PROJECT, ID_EXCLUDED_HEADERS, '');
     FCustomCTypesMap := IniFile.ReadString(IS_PROJECT, ID_CUSTOM_CTYPES_MAP, '');
     for P := Low(TPlatformType) to High(TPlatformType) do
@@ -639,6 +660,7 @@ begin
   FTargetPasFile := '';
   FUseUnits := '';
   FLibraryConstant := '';
+  FDebugDefine := '';
   FIgnoredFiles := '';
 
   for P := Low(TPlatformType) to High(TPlatformType) do
@@ -675,6 +697,7 @@ begin
     IniFile.WriteString(IS_PROJECT, ID_TARGET_PAS_FILE, FTargetPasFile);
     IniFile.WriteString(IS_PROJECT, ID_USE_UNITS, FUseUnits);
     IniFile.WriteString(IS_PROJECT, ID_LIBRARY_CONSTANT, FLibraryConstant);
+    IniFile.WriteString(IS_PROJECT, ID_DEBUG_DEFINE, FDebugDefine);
     IniFile.WriteString(IS_PROJECT, ID_EXCLUDED_HEADERS, FIgnoredFiles);
     IniFile.WriteString(IS_PROJECT, ID_CUSTOM_CTYPES_MAP, FCustomCTypesMap);
 
@@ -752,6 +775,15 @@ begin
   if (not SameText(FCustomCTypesMap,AValue)) then
   begin
     FCustomCTypesMap := AValue;
+    Modified := True;
+  end;
+end;
+
+procedure TProject.SetDebugDefine(const Value: String);
+begin
+  if (Value <> FDebugDefine) then
+  begin
+    FDebugDefine := Value;
     Modified := True;
   end;
 end;
@@ -921,6 +953,7 @@ begin
 
   FEnabled := AIniFile.ReadBool(Section, ID_ENABLED, False);
   FLibraryName := AIniFile.ReadString(Section, ID_LIBRARY_NAME, '');
+  FDebugLibraryName := AIniFile.ReadString(Section, ID_DEBUG_LIBRARY_NAME, '');
   FPrefix := AIniFile.ReadString(Section, ID_PREFIX, '');
 end;
 
@@ -928,6 +961,7 @@ procedure TPlatform.Reset;
 begin
   FEnabled := (FPlatformType = TPlatformType.Win32);
   FLibraryName := '';
+  FDebugLibraryName := '';
   FPrefix := '';
 end;
 
@@ -938,7 +972,17 @@ begin
   Section := IS_PLATFORM_PREFIX + GetEnumName(TypeInfo(TPlatformType), Ord(FPlatformType));
   AIniFile.WriteBool(Section, ID_ENABLED, FEnabled);
   AIniFile.WriteString(Section, ID_LIBRARY_NAME, FLibraryName);
+  AIniFile.WriteString(Section, ID_DEBUG_LIBRARY_NAME, FDebugLibraryName);
   AIniFile.WriteString(Section, ID_PREFIX, FPrefix);
+end;
+
+procedure TPlatform.SetDebugLibraryName(const AValue: String);
+begin
+  if (AValue <> FDebugLibraryName) then
+  begin
+    FDebugLibraryName := AValue;
+    FProject.Modified := True;
+  end;
 end;
 
 procedure TPlatform.SetEnabled(const AValue: Boolean);
