@@ -27,7 +27,8 @@ uses
   Vcl.Menus,
   Vcl.ActnList,
   Chet.Project,
-  Chet.HeaderTranslator;
+  Chet.HeaderTranslator
+  ;
 
 type
   TFormMain = class(TForm)
@@ -132,8 +133,15 @@ type
     ComboBoxConvertUnsignedChar: TComboBox;
     CheckBoxDelayedLoading: TCheckBox;
     CheckBoxPrefixSymbolsWithUnderscore: TCheckBox;
-    procedure ButtonGroupCategoriesButtonClicked(Sender: TObject;
-      Index: Integer);
+    PostProcess: TCard;
+    ScriptMemo: TMemo;
+    ButtonClearScript: TButton;
+    ButtonScriptHelp: TButton;
+    LabelIgnoredHeaders: TLabel;
+    EditIgnoredHeaders: TEdit;
+    LabelCustomTypes: TLabel;
+    MemoCustomTypesMap: TMemo;
+    procedure ButtonGroupCategoriesButtonClicked(Sender: TObject; Index: Integer);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure ActionAddCmdLineArgExecute(Sender: TObject);
     procedure EditHeaderFileDirectoryChange(Sender: TObject);
@@ -168,6 +176,10 @@ type
     procedure ComboBoxConvertUnsignedCharChange(Sender: TObject);
     procedure CheckBoxDelayedLoadingClick(Sender: TObject);
     procedure CheckBoxPrefixSymbolsWithUnderscoreClick(Sender: TObject);
+    procedure ButtonClearScriptClick(Sender: TObject);
+    procedure ButtonScriptHelpClick(Sender: TObject);    
+    procedure EditIgnoredHeadersChange(Sender: TObject);
+    procedure MemoCustomTypesMapChange(Sender: TObject);
   private
     { Private declarations }
     FProject: TProject;
@@ -201,6 +213,8 @@ var
 implementation
 
 {$R *.dfm}
+uses
+  Chet.Postprocessor, Form.ScriptHelp;
 
 procedure TFormMain.ActionAddCmdLineArgExecute(Sender: TObject);
 begin
@@ -321,6 +335,7 @@ begin
   try
     Translator.OnMessage := HandleTranslatorMessage;
     Translator.Run;
+    TFilePostProcessor.Execute(FProject, ScriptMemo.Lines);
   finally
     Translator.Free;
   end;
@@ -359,6 +374,23 @@ procedure TFormMain.ButtonBrowsePasFileClick(Sender: TObject);
 begin
   if SaveDialogPasFile.Execute then
     EditPasFile.Text := SaveDialogPasFile.FileName;
+end;
+
+procedure TFormMain.ButtonClearScriptClick(Sender: TObject);
+begin
+  ScriptMemo.Clear;
+end;
+
+procedure TFormMain.ButtonScriptHelpClick(Sender: TObject);
+var
+  LForm: TFormScriptHelp;
+begin
+  LForm := TFormScriptHelp.Create(nil);
+  try
+    LForm.ShowModal;
+  finally
+    FreeAndNil(LForm);
+  end;
 end;
 
 procedure TFormMain.ButtonGroupCategoriesButtonClicked(Sender: TObject;
@@ -520,6 +552,8 @@ begin
 
   if (ParamCount > 0) then
     Load(ParamStr(1));
+  MemoCustomTypesMap.Hint := 'Input format: CTypeName=DelphiTypeName.'#13#10'Use CTRL + ENTER to insert new line.';
+  MemoCustomTypesMap.OnChange := MemoCustomTypesMapChange;
 end;
 
 destructor TFormMain.Destroy;
@@ -531,6 +565,11 @@ end;
 procedure TFormMain.EditHeaderFileDirectoryChange(Sender: TObject);
 begin
   FProject.HeaderFileDirectory := EditHeaderFileDirectory.Text;
+end;
+
+procedure TFormMain.EditIgnoredHeadersChange(Sender: TObject);
+begin
+  FProject.IgnoredFiles := EditIgnoredHeaders.Text;
 end;
 
 procedure TFormMain.EditLibConstantChange(Sender: TObject);
@@ -592,8 +631,14 @@ begin
     Exit;
   end;
 
+  CheckSave;
   FProject.Load(AFilename);
   SetControls;
+end;
+
+procedure TFormMain.MemoCustomTypesMapChange(Sender: TObject);
+begin
+  FProject.CustomCTypesMap := MemoCustomTypesMap.Lines.CommaText.Trim;
 end;
 
 procedure TFormMain.MemoIgnoreExit(Sender: TObject);
@@ -612,7 +657,7 @@ function TFormMain.Save: Boolean;
 begin
   if (FProject.ProjectFilename = '') then
     Exit(SaveAs);
-
+  FProject.Script := ScriptMemo.Lines.Text;
   FProject.Save(FProject.ProjectFilename);
   Result := True;
 end;
@@ -622,6 +667,7 @@ begin
   Result := SaveDialogProject.Execute;
   if (Result) then
   begin
+    FProject.Script := ScriptMemo.Lines.Text;
     FProject.Save(SaveDialogProject.FileName);
     UpdateCaption;
   end;
@@ -631,6 +677,7 @@ procedure TFormMain.SetControls;
 begin
   EditHeaderFileDirectory.Text := FProject.HeaderFileDirectory;
   CheckBoxIncludeSubdiretories.Checked := FProject.IncludeSubdirectories;
+  EditIgnoredHeaders.Text := FProject.IgnoredFiles;
   EditPasFile.Text := FProject.TargetPasFile;
   EditUseUnits.Text := FProject.UseUnits;
 
@@ -651,9 +698,11 @@ begin
   ComboBoxUnconvertibleHandling.ItemIndex := Ord(FProject.UnconvertibleHandling);
 
   MemoIgnore.Lines := FProject.SymbolsToIgnore;
+  ScriptMemo.Lines.Text := FProject.Script;  
+  MemoCustomTypesMap.Lines.Commatext := FProject.CustomCTypesMap;
 
   EditLibConstant.Text := FProject.LibraryConstant;
-
+  
   SetPlatformControls;
 
   UpdateCaption;

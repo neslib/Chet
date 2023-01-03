@@ -1,8 +1,11 @@
 [Project]
-HeaderFileDirectory=
-IncludeSubdirs=0
-TargetPasFile=sample.pas
+HeaderFileDirectory=.\
+IncludeSubdirs=1
+TargetPasFile=D:\develop\projects\cnet\Sample\sample.pas
+UseUnits=
 LibraryConstant=LIB_SAMPLE
+ExcludedHeaders=usp10.h
+CTypesToDelphiMap=WORD=UInt16,DWORD=UInt32,LONG=Int32,ULONG=UInt32,"BYTE=Byte "
 
 [Platform.Win32]
 Enabled=1
@@ -14,7 +17,12 @@ Enabled=1
 LibraryName=sample.dll
 Prefix=
 
-[Platform.Mac32]
+[Platform.MacARM]
+Enabled=0
+LibraryName=
+Prefix=
+
+[Platform.MacIntel]
 Enabled=0
 LibraryName=
 Prefix=
@@ -29,20 +37,34 @@ Enabled=0
 LibraryName=
 Prefix=
 
-[Platform.Android]
+[Platform.Android32]
+Enabled=0
+LibraryName=
+Prefix=
+
+[Platform.Android64]
 Enabled=0
 LibraryName=
 Prefix=
 
 [ParseOptions]
-IgnoreParseErrors=0
+IgnoreParseErrors=1
 CmdLineArgs=
 
 [ConvertOptions]
 CallConv=Cdecl
 CharConvert=UTF8Char
+UnsignedCharConvert=Byte
 CommentConvert=KeepAsIs
 ReservedWordHandling=PrefixAmpersand
 TreatDirectivesAsReservedWords=1
+DelayedLoading=0
+EnumHandling=ConvertToEnum
 UnconvertibleHandling=WriteToDo
+
+[Ignore]
+Count=0
+
+[Script]
+=0B00000050006F0073007400500072006F006300650073007300
 

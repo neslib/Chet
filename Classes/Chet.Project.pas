@@ -186,6 +186,10 @@ type
     FUnconvertibleHandling: TUnconvertibleHandling;
 
     FSymbolsToIgnore: TStrings;
+    FScript: string;
+
+    FIgnoredFiles: string;
+    FCustomCTypesMap: string;
 
     procedure SetHeaderFileDirectory(const Value: String);
     procedure SetIncludeSubdirectories(const Value: Boolean);
@@ -209,8 +213,10 @@ type
     procedure SetEnumHandling(const Value: TEnumHandling);
     procedure SetUseUnits(const Value: String);
     procedure SetSymbolsToIgnore(const Value: TStrings);
-  private
+    procedure SetIgnoredFiles(const Value: string);
     procedure SymbolsToIgnoreChange(Sender: TObject);
+    procedure SetCustomCTypesMap(const Value: string);
+    procedure SetModified(const Value: Boolean);
   {$ENDREGION 'Internal Declarations'}
   public
     constructor Create;
@@ -262,7 +268,7 @@ type
 
     { Whether project has been modified (whether any of its properties have
       changed since the last load or save) }
-    property Modified: Boolean read FModified;
+    property Modified: Boolean read FModified write SetModified;
 
     { Directory with header files.
       May be a directory relative to the current directory. }
@@ -271,6 +277,10 @@ type
     { Whether to include subdirectories while scanning for header files in
       HeaderFileDirectory. }
     property IncludeSubdirectories: Boolean read FIncludeSubdirectories write SetIncludeSubdirectories;
+
+    { Ignore this files in
+      HeaderFileDirectory. }
+    property IgnoredFiles: string read FIgnoredFiles write SetIgnoredFiles;
 
     { Name of the Pascal file that will be generated.
       May contain a path relative to the current directory. }
@@ -324,6 +334,8 @@ type
 
     { Whether to treat Delphi directives as reserved words as well. }
     property TreatDirectivesAsReservedWords: Boolean read FTreatDirectivesAsReservedWords write SetTreatDirectivesAsReservedWords;
+    { Comma separated list of pair CType=DelphiType. }
+    property CustomCTypesMap: string read FCustomCTypesMap write SetCustomCTypesMap;
 
     {$IFDEF EXPERIMENTAL}
     { Whether to prefix all symbols in the resulting Pascal file with an
@@ -353,6 +365,8 @@ type
     { List of symbols (constants, types, functions) to ignore. These will not
       be translated. Symbols are case-sensitive. }
     property SymbolsToIgnore: TStrings read FSymbolsToIgnore write SetSymbolsToIgnore;
+    { PostProcessing script}
+    property Script: string read FScript write FScript;
   end;
 
 implementation
@@ -363,6 +377,7 @@ const // Ini Sections
   IS_PARSE_OPTIONS = 'ParseOptions';
   IS_CONVERT_OPTIONS = 'ConvertOptions';
   IS_IGNORE = 'Ignore';
+  IS_POSTPROCESS = 'PostProcess';
 
 const // Ini Identifiers
   ID_HEADER_FILE_DIRECTORY = 'HeaderFileDirectory';
@@ -387,6 +402,8 @@ const // Ini Identifiers
   ID_LIBRARY_NAME = 'LibraryName';
   ID_PREFIX = 'Prefix';
   ID_LIBRARY_CONSTANT = 'LibraryConstant';
+  ID_EXCLUDEDHEADERS = 'ExcludedHeaders';
+  ID_CUSTOMCTYPESMAP = 'CTypesToDelphiMap';
   ID_COUNT = 'Count';
   ID_ITEM = 'Item';
 
@@ -395,6 +412,8 @@ type
   public
     function ReadEnum<T>(const ASection, AIdent: String; const ADefault: T): T;
     procedure WriteEnum<T>(const ASection, AIdent: String; const AValue: T);
+    function ReadStringBinary(const ASection, AIdent: String; const ADefault: string = ''): string;
+    procedure WriteStringBinary(const AValue, ASection, AIdent: String);
   end;
 
 { TCustomIniFileHelper }
@@ -418,6 +437,29 @@ begin
   Move(I, Result, SizeOf(T));
 end;
 
+function TCustomIniFileHelper.ReadStringBinary(const ASection, AIdent, ADefault: string): string;
+var
+  I: Integer;
+  S: TMemoryStream;
+begin
+  Result := ADefault;
+
+  S := TMemoryStream.Create;
+  try
+    I := ReadBinaryStream(ASection, AIdent, S);
+    if I < 0 then
+      Exit;
+
+    S.Read(I, SizeOf(Integer));
+    SetLength(Result, I);
+    if I > 0 then
+      S.Read(Result[1], I * SizeOf(Char));
+  finally
+    S.Free;
+  end;
+end;
+
+
 procedure TCustomIniFileHelper.WriteEnum<T>(const ASection, AIdent: String;
   const AValue: T);
 var
@@ -433,12 +475,33 @@ begin
   WriteString(ASection, AIdent, S);
 end;
 
+procedure TCustomIniFileHelper.WriteStringBinary(const AValue, ASection, AIdent: String);
+var
+  I: Integer;
+  S: TMemoryStream;
+begin
+  I := Length(AValue);
+  S := TMemoryStream.Create;
+  try
+    S.Write(I, SizeOf(I));
+    if I > 0 then
+      S.Write(AValue[1], I * SizeOf(AValue[1]));
+    S.Position := 0;
+    WriteBinaryStream(ASection, AIdent, S);
+  finally
+    S.Free;
+  end;
+end;
+
 { TProject }
 
 procedure TProject.AddCmdLineArg(const AArg: String);
 begin
-  FCmdLineArgs.Add(AArg);
-  FModified := True;
+  if FCmdLineArgs.IndexOf(AArg) < 0 then
+  begin
+    FCmdLineArgs.Add(AArg);
+    Modified := True;
+  end;
 end;
 
 constructor TProject.Create;
@@ -461,7 +524,7 @@ begin
   if (AIndex >= 0) and (AIndex < FCmdLineArgs.Count) then
   begin
     FCmdLineArgs.Delete(AIndex);
-    FModified := True;
+    Modified := True;
   end;
 end;
 
@@ -507,7 +570,8 @@ begin
     FTargetPasFile := IniFile.ReadString(IS_PROJECT, ID_TARGET_PAS_FILE, '');
     FUseUnits := IniFile.ReadString(IS_PROJECT, ID_USE_UNITS, '');
     FLibraryConstant := IniFile.ReadString(IS_PROJECT, ID_LIBRARY_CONSTANT, '');
-
+    FIgnoredFiles := IniFile.ReadString(IS_PROJECT, ID_EXCLUDEDHEADERS, '');
+    FCustomCTypesMap := IniFile.ReadString(IS_PROJECT, ID_CUSTOMCTYPESMAP, '');
     for P := Low(TPlatformType) to High(TPlatformType) do
       FPlatforms[P].Load(IniFile);
 
@@ -534,7 +598,9 @@ begin
     if (FHeaderFileDirectory = '') then
       FHeaderFileDirectory := '.\';
 
-    FModified := False;
+    FScript := IniFile.ReadStringBinary(IS_POSTPROCESS, 'Script','');
+
+    Modified := False;
     FProjectFilename := AFilename;
   finally
     IniFile.Free;
@@ -566,6 +632,7 @@ begin
   FTargetPasFile := '';
   FUseUnits := '';
   FLibraryConstant := '';
+  FIgnoredFiles := '';
 
   for P := Low(TPlatformType) to High(TPlatformType) do
     FPlatforms[P].Reset;
@@ -581,8 +648,9 @@ begin
   FTreatDirectivesAsReservedWords := True;
   FEnumHandling := TEnumHandling.ConvertToEnum;
   FUnconvertibleHandling := TUnconvertibleHandling.WriteToDo;
-
   FSymbolsToIgnore.Clear;
+  FCustomCTypesMap := '';
+  FScript := '';
 end;
 
 procedure TProject.Save(const AFilename: String);
@@ -600,6 +668,8 @@ begin
     IniFile.WriteString(IS_PROJECT, ID_TARGET_PAS_FILE, FTargetPasFile);
     IniFile.WriteString(IS_PROJECT, ID_USE_UNITS, FUseUnits);
     IniFile.WriteString(IS_PROJECT, ID_LIBRARY_CONSTANT, FLibraryConstant);
+    IniFile.WriteString(IS_PROJECT, ID_EXCLUDEDHEADERS, FIgnoredFiles);
+    IniFile.WriteString(IS_PROJECT, ID_CUSTOMCTYPESMAP,FCustomCTypesMap);
 
     for P := Low(TPlatformType) to High(TPlatformType) do
       FPlatforms[P].Save(IniFile);
@@ -624,8 +694,10 @@ begin
     for I := 0 to FSymbolsToIgnore.Count - 1 do
       IniFile.WriteString(IS_IGNORE, ID_ITEM + I.ToString, FSymbolsToIgnore[I]);
 
+    IniFile.WriteStringBinary(IS_POSTPROCESS,'Script',FScript);
+
     IniFile.UpdateFile;
-    FModified := False;
+    Modified := False;
     FProjectFilename := AFilename;
   finally
     IniFile.Free;
@@ -637,7 +709,7 @@ begin
   if (Value <> FCallConv) then
   begin
     FCallConv := Value;
-    FModified := True;
+    Modified := True;
   end;
 end;
 
@@ -646,7 +718,7 @@ begin
   if (Value <> FCharConvert) then
   begin
     FCharConvert := Value;
-    FModified := True;
+    Modified := True;
   end;
 end;
 
@@ -655,7 +727,7 @@ begin
   if (Value <> FUnsignedCharConvert) then
   begin
     FUnsignedCharConvert := Value;
-    FModified := True;
+    Modified := True;
   end;
 end;
 
@@ -664,7 +736,16 @@ begin
   if (Value <> FCommentConvert) then
   begin
     FCommentConvert := Value;
-    FModified := True;
+    Modified := True;
+  end;
+end;
+
+procedure TProject.SetCustomCTypesMap(const Value: string);
+begin
+  if not SameText(FCustomCTypesMap,Value) then
+  begin
+    FCustomCTypesMap := Value;
+    Modified := True;
   end;
 end;
 
@@ -673,7 +754,7 @@ begin
   if (Value <> FDelayedLoading) then
   begin
     FDelayedLoading := Value;
-    FModified := True;
+    Modified := True;
   end;
 end;
 
@@ -682,7 +763,17 @@ begin
   if (Value <> FEnumHandling) then
   begin
     FEnumHandling := Value;
-    FModified := True;
+    Modified := True;
+  end;
+end;
+
+procedure TProject.SetIgnoredFiles(const Value: string);
+begin
+  FIgnoredFiles := Value;
+  if (FIgnoredFiles <> Value) then
+  begin
+    FIgnoredFiles := Value;
+    Modified := True;
   end;
 end;
 
@@ -697,7 +788,7 @@ begin
   if (Dir <> FHeaderFileDirectory) then
   begin
     FHeaderFileDirectory := Dir;
-    FModified := True;
+    Modified := True;
   end;
 end;
 
@@ -715,7 +806,7 @@ begin
   if (Value <> FIncludeSubdirectories) then
   begin
     FIncludeSubdirectories := Value;
-    FModified := True;
+    Modified := True;
   end;
 end;
 
@@ -724,8 +815,13 @@ begin
   if (Value <> FLibraryConstant) then
   begin
     FLibraryConstant := Value;
-    FModified := True;
+    Modified := True;
   end;
+end;
+
+procedure TProject.SetModified(const Value: Boolean);
+begin
+  FModified := Value;
 end;
 
 {$IFDEF EXPERIMENTAL}
@@ -734,7 +830,7 @@ begin
   if (Value <> FPrefixSymbolsWithUnderscore) then
   begin
     FPrefixSymbolsWithUnderscore := Value;
-    FModified := True;
+    Modified := True;
   end;
 end;
 {$ENDIF}
@@ -744,7 +840,7 @@ begin
   if (Value <> FReservedWordHandling) then
   begin
     FReservedWordHandling := Value;
-    FModified := True;
+    Modified := True;
   end;
 end;
 
@@ -759,7 +855,7 @@ begin
   if (Value <> FTargetPasFile) then
   begin
     FTargetPasFile := Value;
-    FModified := True;
+    Modified := True;
   end;
 end;
 
@@ -768,7 +864,7 @@ begin
   if (Value <> FTreatDirectivesAsReservedWords) then
   begin
     FTreatDirectivesAsReservedWords := Value;
-    FModified := True;
+    Modified := True;
   end;
 end;
 
@@ -778,7 +874,7 @@ begin
   if (Value <> FUnconvertibleHandling) then
   begin
     FUnconvertibleHandling := Value;
-    FModified := True;
+    Modified := True;
   end;
 end;
 
@@ -787,7 +883,7 @@ begin
   if (Value <> FUseUnits) then
   begin
     FUseUnits := Value;
-    FModified := True;
+    Modified := True;
   end;
 end;
 
@@ -844,7 +940,7 @@ begin
   if (AValue <> FEnabled) then
   begin
     FEnabled := AValue;
-    FProject.FModified := True;
+    FProject.Modified := True;
   end;
 end;
 
@@ -853,7 +949,7 @@ begin
   if (AValue <> FLibraryName) then
   begin
     FLibraryName := AValue;
-    FProject.FModified := True;
+    FProject.Modified := True;
   end;
 end;
 
@@ -862,7 +958,7 @@ begin
   if (AValue <> FPrefix) then
   begin
     FPrefix := AValue;
-    FProject.FModified := True;
+    FProject.Modified := True;
   end;
 end;
 
