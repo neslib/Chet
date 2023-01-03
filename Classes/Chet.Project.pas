@@ -118,9 +118,11 @@ type
     FPlatformType: TPlatformType;
     FEnabled: Boolean;
     FLibraryName: String;
+    FDebugLibraryName: String;
     FPrefix: String;
     procedure SetEnabled(const AValue: Boolean);
     procedure SetLibraryName(const AValue: String);
+    procedure SetDebugLibraryName(const AValue: String);
     procedure SetPrefix(const AValue: String);
   public
     constructor Create(const AProject: TProject;
@@ -149,6 +151,11 @@ type
     { The name of the (dynamic or static) library for this platform. }
     property LibraryName: String read FLibraryName write SetLibraryName;
 
+    { Optional name of the (dynamic or static) library containing a DEBUG build
+      for this platform. This version of the library will be used if the
+      application is built with a define that is set in TProject.DebugDefine. }
+    property DebugLibraryName: String read FDebugLibraryName write SetDebugLibraryName;
+
     { The function name prefix to use for this platform. Usually an empty
       string, but on some platforms, each function will have a '_' prefix. }
     property Prefix: String read FPrefix write SetPrefix;
@@ -167,6 +174,7 @@ type
     FUseUnits: String;
 
     FLibraryConstant: String;
+    FDebugDefine: String;
     FPlatforms: array [TPlatformType] of TPlatform;
 
     FIgnoreParseErrors: Boolean;
@@ -186,6 +194,10 @@ type
     FUnconvertibleHandling: TUnconvertibleHandling;
 
     FSymbolsToIgnore: TStrings;
+    FScript: String;
+
+    FIgnoredFiles: String;
+    FCustomCTypesMap: String;
 
     procedure SetHeaderFileDirectory(const Value: String);
     procedure SetIncludeSubdirectories(const Value: Boolean);
@@ -206,9 +218,13 @@ type
     procedure SetUnconvertibleHandling(const Value: TUnconvertibleHandling);
     function GetPlatform(const AIndex: TPlatformType): TPlatform;
     procedure SetLibraryConstant(const Value: String);
+    procedure SetDebugDefine(const Value: String);
     procedure SetEnumHandling(const Value: TEnumHandling);
     procedure SetUseUnits(const Value: String);
     procedure SetSymbolsToIgnore(const Value: TStrings);
+    procedure SetIgnoredFiles(const AValue: String);
+    procedure SetCustomCTypesMap(const AValue: String);
+    procedure SetModified(const AValue: Boolean);
   private
     procedure SymbolsToIgnoreChange(Sender: TObject);
   {$ENDREGION 'Internal Declarations'}
@@ -262,7 +278,7 @@ type
 
     { Whether project has been modified (whether any of its properties have
       changed since the last load or save) }
-    property Modified: Boolean read FModified;
+    property Modified: Boolean read FModified write SetModified;
 
     { Directory with header files.
       May be a directory relative to the current directory. }
@@ -271,6 +287,10 @@ type
     { Whether to include subdirectories while scanning for header files in
       HeaderFileDirectory. }
     property IncludeSubdirectories: Boolean read FIncludeSubdirectories write SetIncludeSubdirectories;
+
+    { Ignore this files in
+      HeaderFileDirectory. }
+    property IgnoredFiles: String read FIgnoredFiles write SetIgnoredFiles;
 
     { Name of the Pascal file that will be generated.
       May contain a path relative to the current directory. }
@@ -287,6 +307,15 @@ type
       const
         LIB_MYLIB = 'mylib.dll' }
     property LibraryConstant: String read FLibraryConstant write SetLibraryConstant;
+
+    (*The name of the define that is used to link to Debug versions of the
+      library. For example, if there are is a debug version of the 'mylib.dll'
+      library called 'mylib_debug.dll', and DebugDefine is set to 'DEBUG_LIBS',
+      then the following code will be generated:
+
+      const
+        LIB_MYLIB = {$IFDEF DEBUG_LIBS}'mylib_debug.dll'{ELSE}'mylib.dll'{$ENDIF} *)
+    property DebugDefine: String read FDebugDefine write SetDebugDefine;
 
     { Information about each of the supported platforms }
     property Platforms[const AIndex: TPlatformType]: TPlatform read GetPlatform;
@@ -325,6 +354,9 @@ type
     { Whether to treat Delphi directives as reserved words as well. }
     property TreatDirectivesAsReservedWords: Boolean read FTreatDirectivesAsReservedWords write SetTreatDirectivesAsReservedWords;
 
+    { Comma separated list of pair CType=DelphiType. }
+    property CustomCTypesMap: String read FCustomCTypesMap write SetCustomCTypesMap;
+
     {$IFDEF EXPERIMENTAL}
     { Whether to prefix all symbols in the resulting Pascal file with an
       underscore. This is useful if you wrap the C API's into a Delphi class
@@ -353,6 +385,9 @@ type
     { List of symbols (constants, types, functions) to ignore. These will not
       be translated. Symbols are case-sensitive. }
     property SymbolsToIgnore: TStrings read FSymbolsToIgnore write SetSymbolsToIgnore;
+
+    { PostProcessing script}
+    property Script: String read FScript write FScript;
   end;
 
 implementation
@@ -363,6 +398,7 @@ const // Ini Sections
   IS_PARSE_OPTIONS = 'ParseOptions';
   IS_CONVERT_OPTIONS = 'ConvertOptions';
   IS_IGNORE = 'Ignore';
+  IS_POSTPROCESS = 'PostProcess';
 
 const // Ini Identifiers
   ID_HEADER_FILE_DIRECTORY = 'HeaderFileDirectory';
@@ -385,16 +421,24 @@ const // Ini Identifiers
   ID_UNCONVERTIBLE_HANDLING = 'UnconvertibleHandling';
   ID_ENABLED = 'Enabled';
   ID_LIBRARY_NAME = 'LibraryName';
+  ID_DEBUG_LIBRARY_NAME = 'DebugLibraryName';
   ID_PREFIX = 'Prefix';
   ID_LIBRARY_CONSTANT = 'LibraryConstant';
+  ID_EXCLUDED_HEADERS = 'ExcludedHeaders';
+  ID_CUSTOM_CTYPES_MAP = 'CTypesToDelphiMap';
+  ID_DEBUG_DEFINE = 'DebugDefine';
   ID_COUNT = 'Count';
   ID_ITEM = 'Item';
+  ID_SCRIPT = 'Script';
 
 type
   TCustomIniFileHelper = class helper for TCustomIniFile
   public
     function ReadEnum<T>(const ASection, AIdent: String; const ADefault: T): T;
     procedure WriteEnum<T>(const ASection, AIdent: String; const AValue: T);
+    function ReadStringBinary(const ASection, AIdent: String;
+      const ADefault: String = ''): String;
+    procedure WriteStringBinary(const AValue, ASection, AIdent: String);
   end;
 
 { TCustomIniFileHelper }
@@ -418,6 +462,30 @@ begin
   Move(I, Result, SizeOf(T));
 end;
 
+function TCustomIniFileHelper.ReadStringBinary(const ASection, AIdent,
+  ADefault: String): String;
+var
+  I: Integer;
+  S: TMemoryStream;
+begin
+  Result := ADefault;
+
+  S := TMemoryStream.Create;
+  try
+    I := ReadBinaryStream(ASection, AIdent, S);
+    if I < 0 then
+      Exit;
+
+    S.Read(I, SizeOf(Integer));
+    SetLength(Result, I);
+    if (I > 0) then
+      S.Read(Result[Low(String)], I * SizeOf(Char));
+  finally
+    S.Free;
+  end;
+end;
+
+
 procedure TCustomIniFileHelper.WriteEnum<T>(const ASection, AIdent: String;
   const AValue: T);
 var
@@ -433,12 +501,34 @@ begin
   WriteString(ASection, AIdent, S);
 end;
 
+procedure TCustomIniFileHelper.WriteStringBinary(const AValue, ASection,
+  AIdent: String);
+var
+  I: Integer;
+  S: TMemoryStream;
+begin
+  I := Length(AValue);
+  S := TMemoryStream.Create;
+  try
+    S.Write(I, SizeOf(I));
+    if (I > 0) then
+      S.Write(AValue[Low(String)], I * SizeOf(Char));
+    S.Position := 0;
+    WriteBinaryStream(ASection, AIdent, S);
+  finally
+    S.Free;
+  end;
+end;
+
 { TProject }
 
 procedure TProject.AddCmdLineArg(const AArg: String);
 begin
-  FCmdLineArgs.Add(AArg);
-  FModified := True;
+  if (FCmdLineArgs.IndexOf(AArg) < 0) then
+  begin
+    FCmdLineArgs.Add(AArg);
+    Modified := True;
+  end;
 end;
 
 constructor TProject.Create;
@@ -461,7 +551,7 @@ begin
   if (AIndex >= 0) and (AIndex < FCmdLineArgs.Count) then
   begin
     FCmdLineArgs.Delete(AIndex);
-    FModified := True;
+    Modified := True;
   end;
 end;
 
@@ -507,7 +597,9 @@ begin
     FTargetPasFile := IniFile.ReadString(IS_PROJECT, ID_TARGET_PAS_FILE, '');
     FUseUnits := IniFile.ReadString(IS_PROJECT, ID_USE_UNITS, '');
     FLibraryConstant := IniFile.ReadString(IS_PROJECT, ID_LIBRARY_CONSTANT, '');
-
+    FDebugDefine := IniFile.ReadString(IS_PROJECT, ID_DEBUG_DEFINE, '');
+    FIgnoredFiles := IniFile.ReadString(IS_PROJECT, ID_EXCLUDED_HEADERS, '');
+    FCustomCTypesMap := IniFile.ReadString(IS_PROJECT, ID_CUSTOM_CTYPES_MAP, '');
     for P := Low(TPlatformType) to High(TPlatformType) do
       FPlatforms[P].Load(IniFile);
 
@@ -534,7 +626,9 @@ begin
     if (FHeaderFileDirectory = '') then
       FHeaderFileDirectory := '.\';
 
-    FModified := False;
+    FScript := IniFile.ReadStringBinary(IS_POSTPROCESS, ID_SCRIPT, '');
+
+    Modified := False;
     FProjectFilename := AFilename;
   finally
     IniFile.Free;
@@ -566,6 +660,8 @@ begin
   FTargetPasFile := '';
   FUseUnits := '';
   FLibraryConstant := '';
+  FDebugDefine := '';
+  FIgnoredFiles := '';
 
   for P := Low(TPlatformType) to High(TPlatformType) do
     FPlatforms[P].Reset;
@@ -581,8 +677,9 @@ begin
   FTreatDirectivesAsReservedWords := True;
   FEnumHandling := TEnumHandling.ConvertToEnum;
   FUnconvertibleHandling := TUnconvertibleHandling.WriteToDo;
-
   FSymbolsToIgnore.Clear;
+  FCustomCTypesMap := '';
+  FScript := '';
 end;
 
 procedure TProject.Save(const AFilename: String);
@@ -600,6 +697,9 @@ begin
     IniFile.WriteString(IS_PROJECT, ID_TARGET_PAS_FILE, FTargetPasFile);
     IniFile.WriteString(IS_PROJECT, ID_USE_UNITS, FUseUnits);
     IniFile.WriteString(IS_PROJECT, ID_LIBRARY_CONSTANT, FLibraryConstant);
+    IniFile.WriteString(IS_PROJECT, ID_DEBUG_DEFINE, FDebugDefine);
+    IniFile.WriteString(IS_PROJECT, ID_EXCLUDED_HEADERS, FIgnoredFiles);
+    IniFile.WriteString(IS_PROJECT, ID_CUSTOM_CTYPES_MAP, FCustomCTypesMap);
 
     for P := Low(TPlatformType) to High(TPlatformType) do
       FPlatforms[P].Save(IniFile);
@@ -624,8 +724,10 @@ begin
     for I := 0 to FSymbolsToIgnore.Count - 1 do
       IniFile.WriteString(IS_IGNORE, ID_ITEM + I.ToString, FSymbolsToIgnore[I]);
 
+    IniFile.WriteStringBinary(IS_POSTPROCESS, ID_SCRIPT, FScript);
+
     IniFile.UpdateFile;
-    FModified := False;
+    Modified := False;
     FProjectFilename := AFilename;
   finally
     IniFile.Free;
@@ -637,7 +739,7 @@ begin
   if (Value <> FCallConv) then
   begin
     FCallConv := Value;
-    FModified := True;
+    Modified := True;
   end;
 end;
 
@@ -646,7 +748,7 @@ begin
   if (Value <> FCharConvert) then
   begin
     FCharConvert := Value;
-    FModified := True;
+    Modified := True;
   end;
 end;
 
@@ -655,7 +757,7 @@ begin
   if (Value <> FUnsignedCharConvert) then
   begin
     FUnsignedCharConvert := Value;
-    FModified := True;
+    Modified := True;
   end;
 end;
 
@@ -664,7 +766,25 @@ begin
   if (Value <> FCommentConvert) then
   begin
     FCommentConvert := Value;
-    FModified := True;
+    Modified := True;
+  end;
+end;
+
+procedure TProject.SetCustomCTypesMap(const AValue: String);
+begin
+  if (not SameText(FCustomCTypesMap,AValue)) then
+  begin
+    FCustomCTypesMap := AValue;
+    Modified := True;
+  end;
+end;
+
+procedure TProject.SetDebugDefine(const Value: String);
+begin
+  if (Value <> FDebugDefine) then
+  begin
+    FDebugDefine := Value;
+    Modified := True;
   end;
 end;
 
@@ -673,7 +793,7 @@ begin
   if (Value <> FDelayedLoading) then
   begin
     FDelayedLoading := Value;
-    FModified := True;
+    Modified := True;
   end;
 end;
 
@@ -682,7 +802,16 @@ begin
   if (Value <> FEnumHandling) then
   begin
     FEnumHandling := Value;
-    FModified := True;
+    Modified := True;
+  end;
+end;
+
+procedure TProject.SetIgnoredFiles(const AValue: string);
+begin
+  if (FIgnoredFiles <> AValue) then
+  begin
+    FIgnoredFiles := AValue;
+    Modified := True;
   end;
 end;
 
@@ -697,7 +826,7 @@ begin
   if (Dir <> FHeaderFileDirectory) then
   begin
     FHeaderFileDirectory := Dir;
-    FModified := True;
+    Modified := True;
   end;
 end;
 
@@ -715,7 +844,7 @@ begin
   if (Value <> FIncludeSubdirectories) then
   begin
     FIncludeSubdirectories := Value;
-    FModified := True;
+    Modified := True;
   end;
 end;
 
@@ -724,8 +853,13 @@ begin
   if (Value <> FLibraryConstant) then
   begin
     FLibraryConstant := Value;
-    FModified := True;
+    Modified := True;
   end;
+end;
+
+procedure TProject.SetModified(const AValue: Boolean);
+begin
+  FModified := AValue;
 end;
 
 {$IFDEF EXPERIMENTAL}
@@ -734,7 +868,7 @@ begin
   if (Value <> FPrefixSymbolsWithUnderscore) then
   begin
     FPrefixSymbolsWithUnderscore := Value;
-    FModified := True;
+    Modified := True;
   end;
 end;
 {$ENDIF}
@@ -744,7 +878,7 @@ begin
   if (Value <> FReservedWordHandling) then
   begin
     FReservedWordHandling := Value;
-    FModified := True;
+    Modified := True;
   end;
 end;
 
@@ -759,7 +893,7 @@ begin
   if (Value <> FTargetPasFile) then
   begin
     FTargetPasFile := Value;
-    FModified := True;
+    Modified := True;
   end;
 end;
 
@@ -768,7 +902,7 @@ begin
   if (Value <> FTreatDirectivesAsReservedWords) then
   begin
     FTreatDirectivesAsReservedWords := Value;
-    FModified := True;
+    Modified := True;
   end;
 end;
 
@@ -778,7 +912,7 @@ begin
   if (Value <> FUnconvertibleHandling) then
   begin
     FUnconvertibleHandling := Value;
-    FModified := True;
+    Modified := True;
   end;
 end;
 
@@ -787,7 +921,7 @@ begin
   if (Value <> FUseUnits) then
   begin
     FUseUnits := Value;
-    FModified := True;
+    Modified := True;
   end;
 end;
 
@@ -819,6 +953,7 @@ begin
 
   FEnabled := AIniFile.ReadBool(Section, ID_ENABLED, False);
   FLibraryName := AIniFile.ReadString(Section, ID_LIBRARY_NAME, '');
+  FDebugLibraryName := AIniFile.ReadString(Section, ID_DEBUG_LIBRARY_NAME, '');
   FPrefix := AIniFile.ReadString(Section, ID_PREFIX, '');
 end;
 
@@ -826,6 +961,7 @@ procedure TPlatform.Reset;
 begin
   FEnabled := (FPlatformType = TPlatformType.Win32);
   FLibraryName := '';
+  FDebugLibraryName := '';
   FPrefix := '';
 end;
 
@@ -836,7 +972,17 @@ begin
   Section := IS_PLATFORM_PREFIX + GetEnumName(TypeInfo(TPlatformType), Ord(FPlatformType));
   AIniFile.WriteBool(Section, ID_ENABLED, FEnabled);
   AIniFile.WriteString(Section, ID_LIBRARY_NAME, FLibraryName);
+  AIniFile.WriteString(Section, ID_DEBUG_LIBRARY_NAME, FDebugLibraryName);
   AIniFile.WriteString(Section, ID_PREFIX, FPrefix);
+end;
+
+procedure TPlatform.SetDebugLibraryName(const AValue: String);
+begin
+  if (AValue <> FDebugLibraryName) then
+  begin
+    FDebugLibraryName := AValue;
+    FProject.Modified := True;
+  end;
 end;
 
 procedure TPlatform.SetEnabled(const AValue: Boolean);
@@ -844,7 +990,7 @@ begin
   if (AValue <> FEnabled) then
   begin
     FEnabled := AValue;
-    FProject.FModified := True;
+    FProject.Modified := True;
   end;
 end;
 
@@ -853,7 +999,7 @@ begin
   if (AValue <> FLibraryName) then
   begin
     FLibraryName := AValue;
-    FProject.FModified := True;
+    FProject.Modified := True;
   end;
 end;
 
@@ -862,7 +1008,7 @@ begin
   if (AValue <> FPrefix) then
   begin
     FPrefix := AValue;
-    FProject.FModified := True;
+    FProject.Modified := True;
   end;
 end;
 

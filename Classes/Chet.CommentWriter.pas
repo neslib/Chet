@@ -602,7 +602,8 @@ begin
         AppendLine;
       end;
   else
-    Append(AComment.Text);
+    S := AComment.Text.Replace('//', '', []);
+    Append(S);
     if (AComment.HasTrailingNewline) then
       AppendLine;
   end;

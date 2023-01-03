@@ -132,8 +132,26 @@ type
     ComboBoxConvertUnsignedChar: TComboBox;
     CheckBoxDelayedLoading: TCheckBox;
     CheckBoxPrefixSymbolsWithUnderscore: TCheckBox;
-    procedure ButtonGroupCategoriesButtonClicked(Sender: TObject;
-      Index: Integer);
+    PostProcess: TCard;
+    ScriptMemo: TMemo;
+    ButtonClearScript: TButton;
+    ButtonScriptHelp: TButton;
+    LabelIgnoredHeaders: TLabel;
+    EditIgnoredHeaders: TEdit;
+    LabelCustomTypes: TLabel;
+    MemoCustomTypesMap: TMemo;
+    EditDebugDefine: TEdit;
+    LabelDebugDefine: TLabel;
+    EditLibDbgAndroid64: TEdit;
+    EditLibDbgAndroid32: TEdit;
+    EditLibDbgIOS: TEdit;
+    EditLibDbgLinux64: TEdit;
+    EditLibDbgMacIntel: TEdit;
+    EditLibDbgMacARM: TEdit;
+    EditLibDbgWin64: TEdit;
+    EditLibDbgWin32: TEdit;
+    LabelDebugLibraryName: TLabel;
+    procedure ButtonGroupCategoriesButtonClicked(Sender: TObject; Index: Integer);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure ActionAddCmdLineArgExecute(Sender: TObject);
     procedure EditHeaderFileDirectoryChange(Sender: TObject);
@@ -168,11 +186,18 @@ type
     procedure ComboBoxConvertUnsignedCharChange(Sender: TObject);
     procedure CheckBoxDelayedLoadingClick(Sender: TObject);
     procedure CheckBoxPrefixSymbolsWithUnderscoreClick(Sender: TObject);
+    procedure ButtonClearScriptClick(Sender: TObject);
+    procedure ButtonScriptHelpClick(Sender: TObject);    
+    procedure EditIgnoredHeadersChange(Sender: TObject);
+    procedure MemoCustomTypesMapChange(Sender: TObject);
+    procedure EditDebugDefineChange(Sender: TObject);
+    procedure EditDebugLibraryNameChange(Sender: TObject);
   private
     { Private declarations }
     FProject: TProject;
     FPlatformEnabled: array [TPlatformType] of TCheckBox;
     FPlatformLibraryName: array [TPlatformType] of TEdit;
+    FPlatformDebugLibraryName: array [TPlatformType] of TEdit;
     FPlatformPrefix: array [TPlatformType] of TEdit;
     procedure NewProject(const AProjectName: String);
     function CheckSave: Boolean;
@@ -201,6 +226,10 @@ var
 implementation
 
 {$R *.dfm}
+
+uses
+  Chet.Postprocessor,
+  Form.ScriptHelp;
 
 procedure TFormMain.ActionAddCmdLineArgExecute(Sender: TObject);
 begin
@@ -321,6 +350,7 @@ begin
   try
     Translator.OnMessage := HandleTranslatorMessage;
     Translator.Run;
+    TFilePostProcessor.Execute(FProject, ScriptMemo.Lines);
   finally
     Translator.Free;
   end;
@@ -359,6 +389,23 @@ procedure TFormMain.ButtonBrowsePasFileClick(Sender: TObject);
 begin
   if SaveDialogPasFile.Execute then
     EditPasFile.Text := SaveDialogPasFile.FileName;
+end;
+
+procedure TFormMain.ButtonClearScriptClick(Sender: TObject);
+begin
+  ScriptMemo.Clear;
+end;
+
+procedure TFormMain.ButtonScriptHelpClick(Sender: TObject);
+var
+  LForm: TFormScriptHelp;
+begin
+  LForm := TFormScriptHelp.Create(nil);
+  try
+    LForm.ShowModal;
+  finally
+    LForm.Free;
+  end;
 end;
 
 procedure TFormMain.ButtonGroupCategoriesButtonClicked(Sender: TObject;
@@ -509,6 +556,15 @@ begin
   FPlatformLibraryName[TPlatformType.Android32] := EditLibAndroid32;
   FPlatformLibraryName[TPlatformType.Android64] := EditLibAndroid64;
 
+  FPlatformDebugLibraryName[TPlatformType.Win32] := EditLibDbgWin32;
+  FPlatformDebugLibraryName[TPlatformType.Win64] := EditLibDbgWin64;
+  FPlatformDebugLibraryName[TPlatformType.MacARM] := EditLibDbgMacARM;
+  FPlatformDebugLibraryName[TPlatformType.MacIntel] := EditLibDbgMacIntel;
+  FPlatformDebugLibraryName[TPlatformType.Linux64] := EditLibDbgLinux64;
+  FPlatformDebugLibraryName[TPlatformType.iOS] := EditLibDbgIOS;
+  FPlatformDebugLibraryName[TPlatformType.Android32] := EditLibDbgAndroid32;
+  FPlatformDebugLibraryName[TPlatformType.Android64] := EditLibDbgAndroid64;
+
   FPlatformPrefix[TPlatformType.Win32] := EditPrefixWin32;
   FPlatformPrefix[TPlatformType.Win64] := EditPrefixWin64;
   FPlatformPrefix[TPlatformType.MacARM] := EditPrefixMacARM;
@@ -520,6 +576,9 @@ begin
 
   if (ParamCount > 0) then
     Load(ParamStr(1));
+
+  MemoCustomTypesMap.Hint := 'Input format: CTypeName=DelphiTypeName.'#13#10'Use CTRL + ENTER to insert new line.';
+  MemoCustomTypesMap.OnChange := MemoCustomTypesMapChange;
 end;
 
 destructor TFormMain.Destroy;
@@ -528,9 +587,29 @@ begin
   inherited;
 end;
 
+procedure TFormMain.EditDebugDefineChange(Sender: TObject);
+begin
+  FProject.DebugDefine := EditDebugDefine.Text;
+end;
+
+procedure TFormMain.EditDebugLibraryNameChange(Sender: TObject);
+var
+  Edit: TEdit;
+  PT: TPlatformType;
+begin
+  Edit := Sender as TEdit;
+  PT := TPlatformType(Edit.Tag);
+  FProject.Platforms[PT].DebugLibraryName := Edit.Text;
+end;
+
 procedure TFormMain.EditHeaderFileDirectoryChange(Sender: TObject);
 begin
   FProject.HeaderFileDirectory := EditHeaderFileDirectory.Text;
+end;
+
+procedure TFormMain.EditIgnoredHeadersChange(Sender: TObject);
+begin
+  FProject.IgnoredFiles := EditIgnoredHeaders.Text;
 end;
 
 procedure TFormMain.EditLibConstantChange(Sender: TObject);
@@ -592,8 +671,14 @@ begin
     Exit;
   end;
 
+  CheckSave;
   FProject.Load(AFilename);
   SetControls;
+end;
+
+procedure TFormMain.MemoCustomTypesMapChange(Sender: TObject);
+begin
+  FProject.CustomCTypesMap := MemoCustomTypesMap.Lines.CommaText.Trim;
 end;
 
 procedure TFormMain.MemoIgnoreExit(Sender: TObject);
@@ -613,6 +698,7 @@ begin
   if (FProject.ProjectFilename = '') then
     Exit(SaveAs);
 
+  FProject.Script := ScriptMemo.Lines.Text;
   FProject.Save(FProject.ProjectFilename);
   Result := True;
 end;
@@ -622,6 +708,7 @@ begin
   Result := SaveDialogProject.Execute;
   if (Result) then
   begin
+    FProject.Script := ScriptMemo.Lines.Text;
     FProject.Save(SaveDialogProject.FileName);
     UpdateCaption;
   end;
@@ -631,6 +718,7 @@ procedure TFormMain.SetControls;
 begin
   EditHeaderFileDirectory.Text := FProject.HeaderFileDirectory;
   CheckBoxIncludeSubdiretories.Checked := FProject.IncludeSubdirectories;
+  EditIgnoredHeaders.Text := FProject.IgnoredFiles;
   EditPasFile.Text := FProject.TargetPasFile;
   EditUseUnits.Text := FProject.UseUnits;
 
@@ -651,8 +739,11 @@ begin
   ComboBoxUnconvertibleHandling.ItemIndex := Ord(FProject.UnconvertibleHandling);
 
   MemoIgnore.Lines := FProject.SymbolsToIgnore;
+  ScriptMemo.Lines.Text := FProject.Script;  
+  MemoCustomTypesMap.Lines.Commatext := FProject.CustomCTypesMap;
 
   EditLibConstant.Text := FProject.LibraryConstant;
+  EditDebugDefine.Text := FProject.DebugDefine;
 
   SetPlatformControls;
 
@@ -674,6 +765,7 @@ begin
     P := FProject.Platforms[PT];
     FPlatformEnabled[PT].Checked := P.Enabled;
     FPlatformLibraryName[PT].Text := P.LibraryName;
+    FPlatformDebugLibraryName[PT].Text := P.DebugLibraryName;
     FPlatformPrefix[PT].Text := P.Prefix;
   end;
 end;
@@ -708,6 +800,7 @@ var
 begin
   B := FPlatformEnabled[APlatform].Checked;
   FPlatformLibraryName[APlatform].Enabled := B;
+  FPlatformDebugLibraryName[APlatform].Enabled := B;
   FPlatformPrefix[APlatform].Enabled := B;
 end;
 

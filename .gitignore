@@ -24,7 +24,11 @@ Win64/
 *.dsk
 *.dproj.local
 *.identcache
-*.groupproj.local
+*.local
+*.projdata
+*.tvsconfig
+__history/
+__recovery/
 #ignore temporary help files
 HtmlHelp/
 Html/
