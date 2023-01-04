@@ -27,7 +27,8 @@ uses
   Vcl.Menus,
   Vcl.ActnList,
   Chet.Project,
-  Chet.HeaderTranslator;
+  Chet.HeaderTranslator,
+  Form.ScriptHelp;
 
 type
   TFormMain = class(TForm)
@@ -151,6 +152,7 @@ type
     EditLibDbgWin64: TEdit;
     EditLibDbgWin32: TEdit;
     LabelDebugLibraryName: TLabel;
+    ButtonTranslate: TButton;
     procedure ButtonGroupCategoriesButtonClicked(Sender: TObject; Index: Integer);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure ActionAddCmdLineArgExecute(Sender: TObject);
@@ -192,6 +194,9 @@ type
     procedure MemoCustomTypesMapChange(Sender: TObject);
     procedure EditDebugDefineChange(Sender: TObject);
     procedure EditDebugLibraryNameChange(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
+    procedure ButtonTranslateClick(Sender: TObject);
   private
     { Private declarations }
     FProject: TProject;
@@ -199,6 +204,7 @@ type
     FPlatformLibraryName: array [TPlatformType] of TEdit;
     FPlatformDebugLibraryName: array [TPlatformType] of TEdit;
     FPlatformPrefix: array [TPlatformType] of TEdit;
+    FFormScriptHelp: TFormScriptHelp;
     procedure NewProject(const AProjectName: String);
     function CheckSave: Boolean;
     function Save: Boolean;
@@ -228,8 +234,7 @@ implementation
 {$R *.dfm}
 
 uses
-  Chet.Postprocessor,
-  Form.ScriptHelp;
+  Chet.Postprocessor;
 
 procedure TFormMain.ActionAddCmdLineArgExecute(Sender: TObject);
 begin
@@ -397,15 +402,14 @@ begin
 end;
 
 procedure TFormMain.ButtonScriptHelpClick(Sender: TObject);
-var
-  LForm: TFormScriptHelp;
 begin
-  LForm := TFormScriptHelp.Create(nil);
-  try
-    LForm.ShowModal;
-  finally
-    LForm.Free;
-  end;
+  FFormScriptHelp.Visible := not FFormScriptHelp.Visible;
+end;
+
+procedure TFormMain.ButtonTranslateClick(Sender: TObject);
+begin
+  //
+  ActionRunTranslatorExecute(nil);
 end;
 
 procedure TFormMain.ButtonGroupCategoriesButtonClicked(Sender: TObject;
@@ -651,6 +655,18 @@ procedure TFormMain.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
   if (not CheckSave) then
     CanClose := False;
+end;
+
+procedure TFormMain.FormCreate(Sender: TObject);
+begin
+  //
+  FFormScriptHelp := TFormScriptHelp.Create(nil);
+end;
+
+procedure TFormMain.FormDestroy(Sender: TObject);
+begin
+  //
+  FreeAndNil(FFormScriptHelp);
 end;
 
 procedure TFormMain.HandleTranslatorMessage(const AMessage: String);
