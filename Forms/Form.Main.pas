@@ -197,6 +197,7 @@ type
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure ButtonTranslateClick(Sender: TObject);
+    procedure ScriptMemoChange(Sender: TObject);
   private
     { Private declarations }
     FProject: TProject;
@@ -205,7 +206,9 @@ type
     FPlatformDebugLibraryName: array [TPlatformType] of TEdit;
     FPlatformPrefix: array [TPlatformType] of TEdit;
     FFormScriptHelp: TFormScriptHelp;
+    FScriptChanged: Boolean;
     procedure NewProject(const AProjectName: String);
+    procedure CheckScriptChanged;
     function CheckSave: Boolean;
     function Save: Boolean;
     function SaveAs: Boolean;
@@ -458,6 +461,7 @@ end;
 
 function TFormMain.CheckSave: Boolean;
 begin
+  CheckScriptChanged;
   if (not FProject.Modified) then
     Exit(True);
 
@@ -471,6 +475,15 @@ begin
       Result := True;
   else
     Result := False;
+  end;
+end;
+
+procedure TFormMain.CheckScriptChanged;
+begin
+  if (FScriptChanged) then
+  begin
+    FProject.Script := ScriptMemo.Lines.Text;
+    FScriptChanged := False;
   end;
 end;
 
@@ -689,6 +702,7 @@ begin
 
   CheckSave;
   FProject.Load(AFilename);
+  FScriptChanged := False;
   SetControls;
 end;
 
@@ -714,7 +728,7 @@ begin
   if (FProject.ProjectFilename = '') then
     Exit(SaveAs);
 
-  FProject.Script := ScriptMemo.Lines.Text;
+  CheckScriptChanged;
   FProject.Save(FProject.ProjectFilename);
   Result := True;
 end;
@@ -724,10 +738,15 @@ begin
   Result := SaveDialogProject.Execute;
   if (Result) then
   begin
-    FProject.Script := ScriptMemo.Lines.Text;
+    CheckScriptChanged;
     FProject.Save(SaveDialogProject.FileName);
     UpdateCaption;
   end;
+end;
+
+procedure TFormMain.ScriptMemoChange(Sender: TObject);
+begin
+  FScriptChanged := True;
 end;
 
 procedure TFormMain.SetControls;
@@ -755,7 +774,7 @@ begin
   ComboBoxUnconvertibleHandling.ItemIndex := Ord(FProject.UnconvertibleHandling);
 
   MemoIgnore.Lines := FProject.SymbolsToIgnore;
-  ScriptMemo.Lines.Text := FProject.Script;  
+  ScriptMemo.Lines.Text := FProject.Script;
   MemoCustomTypesMap.Lines.Commatext := FProject.CustomCTypesMap;
 
   EditLibConstant.Text := FProject.LibraryConstant;

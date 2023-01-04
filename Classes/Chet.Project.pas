@@ -224,6 +224,7 @@ type
     procedure SetSymbolsToIgnore(const Value: TStrings);
     procedure SetIgnoredFiles(const AValue: String);
     procedure SetCustomCTypesMap(const AValue: String);
+    procedure SetScript(const AValue: String);
     procedure SetModified(const AValue: Boolean);
   private
     procedure SymbolsToIgnoreChange(Sender: TObject);
@@ -387,7 +388,7 @@ type
     property SymbolsToIgnore: TStrings read FSymbolsToIgnore write SetSymbolsToIgnore;
 
     { PostProcessing script}
-    property Script: String read FScript write FScript;
+    property Script: String read FScript write SetScript;
   end;
 
 implementation
@@ -724,8 +725,6 @@ begin
     for I := 0 to FSymbolsToIgnore.Count - 1 do
       IniFile.WriteString(IS_IGNORE, ID_ITEM + I.ToString, FSymbolsToIgnore[I]);
 
-    IniFile.WriteStringBinary(IS_POSTPROCESS, ID_SCRIPT, FScript);
-
     IniFile.WriteStringBinary(FScript, IS_POSTPROCESS, ID_SCRIPT);
 
     IniFile.UpdateFile;
@@ -774,7 +773,7 @@ end;
 
 procedure TProject.SetCustomCTypesMap(const AValue: String);
 begin
-  if (not SameText(FCustomCTypesMap,AValue)) then
+  if (not SameText(FCustomCTypesMap, AValue)) then
   begin
     FCustomCTypesMap := AValue;
     Modified := True;
@@ -880,6 +879,15 @@ begin
   if (Value <> FReservedWordHandling) then
   begin
     FReservedWordHandling := Value;
+    Modified := True;
+  end;
+end;
+
+procedure TProject.SetScript(const AValue: String);
+begin
+  if (not SameText(FScript, AValue)) then
+  begin
+    FScript := AValue;
     Modified := True;
   end;
 end;
