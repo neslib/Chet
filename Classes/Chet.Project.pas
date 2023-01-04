@@ -726,6 +726,8 @@ begin
 
     IniFile.WriteStringBinary(IS_POSTPROCESS, ID_SCRIPT, FScript);
 
+    IniFile.WriteStringBinary(FScript, IS_POSTPROCESS, ID_SCRIPT);
+
     IniFile.UpdateFile;
     Modified := False;
     FProjectFilename := AFilename;
