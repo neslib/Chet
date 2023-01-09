@@ -118,11 +118,9 @@ type
     FPlatformType: TPlatformType;
     FEnabled: Boolean;
     FLibraryName: String;
-    FDebugLibraryName: String;
     FPrefix: String;
     procedure SetEnabled(const AValue: Boolean);
     procedure SetLibraryName(const AValue: String);
-    procedure SetDebugLibraryName(const AValue: String);
     procedure SetPrefix(const AValue: String);
   public
     constructor Create(const AProject: TProject;
@@ -151,11 +149,6 @@ type
     { The name of the (dynamic or static) library for this platform. }
     property LibraryName: String read FLibraryName write SetLibraryName;
 
-    { Optional name of the (dynamic or static) library containing a DEBUG build
-      for this platform. This version of the library will be used if the
-      application is built with a define that is set in TProject.DebugDefine. }
-    property DebugLibraryName: String read FDebugLibraryName write SetDebugLibraryName;
-
     { The function name prefix to use for this platform. Usually an empty
       string, but on some platforms, each function will have a '_' prefix. }
     property Prefix: String read FPrefix write SetPrefix;
@@ -174,10 +167,10 @@ type
     FUseUnits: String;
 
     FLibraryConstant: String;
-    FDebugDefine: String;
     FPlatforms: array [TPlatformType] of TPlatform;
 
     FIgnoreParseErrors: Boolean;
+    FShowParserWarnings: Boolean;
     FCmdLineArgs: TStringList;
 
     FCallConv: TCallConv;
@@ -194,10 +187,10 @@ type
     FUnconvertibleHandling: TUnconvertibleHandling;
 
     FSymbolsToIgnore: TStrings;
-    FScript: String;
+    FScript: string;
 
-    FIgnoredFiles: String;
-    FCustomCTypesMap: String;
+    FIgnoredFiles: string;
+    FCustomCTypesMap: string;
 
     procedure SetHeaderFileDirectory(const Value: String);
     procedure SetIncludeSubdirectories(const Value: Boolean);
@@ -218,16 +211,14 @@ type
     procedure SetUnconvertibleHandling(const Value: TUnconvertibleHandling);
     function GetPlatform(const AIndex: TPlatformType): TPlatform;
     procedure SetLibraryConstant(const Value: String);
-    procedure SetDebugDefine(const Value: String);
     procedure SetEnumHandling(const Value: TEnumHandling);
     procedure SetUseUnits(const Value: String);
     procedure SetSymbolsToIgnore(const Value: TStrings);
-    procedure SetIgnoredFiles(const AValue: String);
-    procedure SetCustomCTypesMap(const AValue: String);
-    procedure SetScript(const AValue: String);
-    procedure SetModified(const AValue: Boolean);
-  private
+    procedure SetIgnoredFiles(const Value: string);
     procedure SymbolsToIgnoreChange(Sender: TObject);
+    procedure SetCustomCTypesMap(const Value: string);
+    procedure SetModified(const Value: Boolean);
+    procedure SetShowParserWarnings(const Value: Boolean);
   {$ENDREGION 'Internal Declarations'}
   public
     constructor Create;
@@ -291,7 +282,7 @@ type
 
     { Ignore this files in
       HeaderFileDirectory. }
-    property IgnoredFiles: String read FIgnoredFiles write SetIgnoredFiles;
+    property IgnoredFiles: string read FIgnoredFiles write SetIgnoredFiles;
 
     { Name of the Pascal file that will be generated.
       May contain a path relative to the current directory. }
@@ -309,20 +300,13 @@ type
         LIB_MYLIB = 'mylib.dll' }
     property LibraryConstant: String read FLibraryConstant write SetLibraryConstant;
 
-    (*The name of the define that is used to link to Debug versions of the
-      library. For example, if there are is a debug version of the 'mylib.dll'
-      library called 'mylib_debug.dll', and DebugDefine is set to 'DEBUG_LIBS',
-      then the following code will be generated:
-
-      const
-        LIB_MYLIB = {$IFDEF DEBUG_LIBS}'mylib_debug.dll'{ELSE}'mylib.dll'{$ENDIF} *)
-    property DebugDefine: String read FDebugDefine write SetDebugDefine;
-
     { Information about each of the supported platforms }
     property Platforms[const AIndex: TPlatformType]: TPlatform read GetPlatform;
 
     { Whether to ignore parse errors and try to convert header files anyway. }
     property IgnoreParseErrors: Boolean read FIgnoreParseErrors write SetIgnoreParseErrors;
+    { Whether parser warnings and diagnostic messages should be displayed (might be useful to look for possible conversion errors). }
+    property ShowParserWarnings: Boolean read FShowParserWarnings write SetShowParserWarnings;
 
     { The calling convention to use for translated function. }
     property CallConv: TCallConv read FCallConv write SetCallConv;
@@ -354,9 +338,8 @@ type
 
     { Whether to treat Delphi directives as reserved words as well. }
     property TreatDirectivesAsReservedWords: Boolean read FTreatDirectivesAsReservedWords write SetTreatDirectivesAsReservedWords;
-
     { Comma separated list of pair CType=DelphiType. }
-    property CustomCTypesMap: String read FCustomCTypesMap write SetCustomCTypesMap;
+    property CustomCTypesMap: string read FCustomCTypesMap write SetCustomCTypesMap;
 
     {$IFDEF EXPERIMENTAL}
     { Whether to prefix all symbols in the resulting Pascal file with an
@@ -386,9 +369,8 @@ type
     { List of symbols (constants, types, functions) to ignore. These will not
       be translated. Symbols are case-sensitive. }
     property SymbolsToIgnore: TStrings read FSymbolsToIgnore write SetSymbolsToIgnore;
-
     { PostProcessing script}
-    property Script: String read FScript write SetScript;
+    property Script: string read FScript write FScript;
   end;
 
 implementation
@@ -407,6 +389,7 @@ const // Ini Identifiers
   ID_USE_UNITS = 'UseUnits';
   ID_TARGET_PAS_FILE = 'TargetPasFile';
   ID_IGNORE_PARSE_ERRORS = 'IgnoreParseErrors';
+  ID_SHOW_PARSE_WARN = 'ShowParserWarnings';
   ID_CMD_LINE_ARGS = 'CmdLineArgs';
   ID_CALL_CONV = 'CallConv';
   ID_CHAR_CONVERT = 'CharConvert';
@@ -422,23 +405,19 @@ const // Ini Identifiers
   ID_UNCONVERTIBLE_HANDLING = 'UnconvertibleHandling';
   ID_ENABLED = 'Enabled';
   ID_LIBRARY_NAME = 'LibraryName';
-  ID_DEBUG_LIBRARY_NAME = 'DebugLibraryName';
   ID_PREFIX = 'Prefix';
   ID_LIBRARY_CONSTANT = 'LibraryConstant';
-  ID_EXCLUDED_HEADERS = 'ExcludedHeaders';
-  ID_CUSTOM_CTYPES_MAP = 'CTypesToDelphiMap';
-  ID_DEBUG_DEFINE = 'DebugDefine';
+  ID_EXCLUDEDHEADERS = 'ExcludedHeaders';
+  ID_CUSTOMCTYPESMAP = 'CTypesToDelphiMap';
   ID_COUNT = 'Count';
   ID_ITEM = 'Item';
-  ID_SCRIPT = 'Script';
 
 type
   TCustomIniFileHelper = class helper for TCustomIniFile
   public
     function ReadEnum<T>(const ASection, AIdent: String; const ADefault: T): T;
     procedure WriteEnum<T>(const ASection, AIdent: String; const AValue: T);
-    function ReadStringBinary(const ASection, AIdent: String;
-      const ADefault: String = ''): String;
+    function ReadStringBinary(const ASection, AIdent: String; const ADefault: string = ''): string;
     procedure WriteStringBinary(const AValue, ASection, AIdent: String);
   end;
 
@@ -463,8 +442,7 @@ begin
   Move(I, Result, SizeOf(T));
 end;
 
-function TCustomIniFileHelper.ReadStringBinary(const ASection, AIdent,
-  ADefault: String): String;
+function TCustomIniFileHelper.ReadStringBinary(const ASection, AIdent, ADefault: string): string;
 var
   I: Integer;
   S: TMemoryStream;
@@ -479,8 +457,8 @@ begin
 
     S.Read(I, SizeOf(Integer));
     SetLength(Result, I);
-    if (I > 0) then
-      S.Read(Result[Low(String)], I * SizeOf(Char));
+    if I > 0 then
+      S.Read(Result[1], I * SizeOf(Char));
   finally
     S.Free;
   end;
@@ -502,8 +480,7 @@ begin
   WriteString(ASection, AIdent, S);
 end;
 
-procedure TCustomIniFileHelper.WriteStringBinary(const AValue, ASection,
-  AIdent: String);
+procedure TCustomIniFileHelper.WriteStringBinary(const AValue, ASection, AIdent: String);
 var
   I: Integer;
   S: TMemoryStream;
@@ -512,8 +489,8 @@ begin
   S := TMemoryStream.Create;
   try
     S.Write(I, SizeOf(I));
-    if (I > 0) then
-      S.Write(AValue[Low(String)], I * SizeOf(Char));
+    if I > 0 then
+      S.Write(AValue[1], I * SizeOf(AValue[1]));
     S.Position := 0;
     WriteBinaryStream(ASection, AIdent, S);
   finally
@@ -525,7 +502,7 @@ end;
 
 procedure TProject.AddCmdLineArg(const AArg: String);
 begin
-  if (FCmdLineArgs.IndexOf(AArg) < 0) then
+  if FCmdLineArgs.IndexOf(AArg) < 0 then
   begin
     FCmdLineArgs.Add(AArg);
     Modified := True;
@@ -598,13 +575,13 @@ begin
     FTargetPasFile := IniFile.ReadString(IS_PROJECT, ID_TARGET_PAS_FILE, '');
     FUseUnits := IniFile.ReadString(IS_PROJECT, ID_USE_UNITS, '');
     FLibraryConstant := IniFile.ReadString(IS_PROJECT, ID_LIBRARY_CONSTANT, '');
-    FDebugDefine := IniFile.ReadString(IS_PROJECT, ID_DEBUG_DEFINE, '');
-    FIgnoredFiles := IniFile.ReadString(IS_PROJECT, ID_EXCLUDED_HEADERS, '');
-    FCustomCTypesMap := IniFile.ReadString(IS_PROJECT, ID_CUSTOM_CTYPES_MAP, '');
+    FIgnoredFiles := IniFile.ReadString(IS_PROJECT, ID_EXCLUDEDHEADERS, '');
+    FCustomCTypesMap := IniFile.ReadString(IS_PROJECT, ID_CUSTOMCTYPESMAP, '');
     for P := Low(TPlatformType) to High(TPlatformType) do
       FPlatforms[P].Load(IniFile);
 
     FIgnoreParseErrors := IniFile.ReadBool(IS_PARSE_OPTIONS, ID_IGNORE_PARSE_ERRORS, False);
+    FShowParserWarnings := IniFile.ReadBool(IS_PARSE_OPTIONS, ID_SHOW_PARSE_WARN, False);
     FCmdLineArgs.DelimitedText := IniFile.ReadString(IS_PARSE_OPTIONS, ID_CMD_LINE_ARGS, '');
 
     FCallConv := IniFile.ReadEnum(IS_CONVERT_OPTIONS, ID_CALL_CONV, TCallConv.Cdecl);
@@ -627,7 +604,7 @@ begin
     if (FHeaderFileDirectory = '') then
       FHeaderFileDirectory := '.\';
 
-    FScript := IniFile.ReadStringBinary(IS_POSTPROCESS, ID_SCRIPT, '');
+    FScript := IniFile.ReadStringBinary(IS_POSTPROCESS, 'Script','');
 
     Modified := False;
     FProjectFilename := AFilename;
@@ -661,13 +638,13 @@ begin
   FTargetPasFile := '';
   FUseUnits := '';
   FLibraryConstant := '';
-  FDebugDefine := '';
   FIgnoredFiles := '';
 
   for P := Low(TPlatformType) to High(TPlatformType) do
     FPlatforms[P].Reset;
 
   FIgnoreParseErrors := False;
+  FShowParserWarnings := False;
   FCmdLineArgs.Clear;
 
   FCallConv := TCallConv.Cdecl;
@@ -698,14 +675,15 @@ begin
     IniFile.WriteString(IS_PROJECT, ID_TARGET_PAS_FILE, FTargetPasFile);
     IniFile.WriteString(IS_PROJECT, ID_USE_UNITS, FUseUnits);
     IniFile.WriteString(IS_PROJECT, ID_LIBRARY_CONSTANT, FLibraryConstant);
-    IniFile.WriteString(IS_PROJECT, ID_DEBUG_DEFINE, FDebugDefine);
-    IniFile.WriteString(IS_PROJECT, ID_EXCLUDED_HEADERS, FIgnoredFiles);
-    IniFile.WriteString(IS_PROJECT, ID_CUSTOM_CTYPES_MAP, FCustomCTypesMap);
+    IniFile.WriteString(IS_PROJECT, ID_EXCLUDEDHEADERS, FIgnoredFiles);
+    IniFile.WriteString(IS_PROJECT, ID_CUSTOMCTYPESMAP,FCustomCTypesMap);
 
     for P := Low(TPlatformType) to High(TPlatformType) do
       FPlatforms[P].Save(IniFile);
 
     IniFile.WriteBool(IS_PARSE_OPTIONS, ID_IGNORE_PARSE_ERRORS, FIgnoreParseErrors);
+    IniFile.WriteBool(IS_PARSE_OPTIONS, ID_SHOW_PARSE_WARN, FShowParserWarnings);
+
     IniFile.WriteString(IS_PARSE_OPTIONS, ID_CMD_LINE_ARGS, FCmdLineArgs.DelimitedText);
 
     IniFile.WriteEnum(IS_CONVERT_OPTIONS, ID_CALL_CONV, FCallConv);
@@ -725,7 +703,7 @@ begin
     for I := 0 to FSymbolsToIgnore.Count - 1 do
       IniFile.WriteString(IS_IGNORE, ID_ITEM + I.ToString, FSymbolsToIgnore[I]);
 
-    IniFile.WriteStringBinary(FScript, IS_POSTPROCESS, ID_SCRIPT);
+    IniFile.WriteStringBinary(IS_POSTPROCESS,'Script',FScript);
 
     IniFile.UpdateFile;
     Modified := False;
@@ -771,20 +749,11 @@ begin
   end;
 end;
 
-procedure TProject.SetCustomCTypesMap(const AValue: String);
+procedure TProject.SetCustomCTypesMap(const Value: string);
 begin
-  if (not SameText(FCustomCTypesMap, AValue)) then
+  if not SameText(FCustomCTypesMap,Value) then
   begin
-    FCustomCTypesMap := AValue;
-    Modified := True;
-  end;
-end;
-
-procedure TProject.SetDebugDefine(const Value: String);
-begin
-  if (Value <> FDebugDefine) then
-  begin
-    FDebugDefine := Value;
+    FCustomCTypesMap := Value;
     Modified := True;
   end;
 end;
@@ -807,11 +776,12 @@ begin
   end;
 end;
 
-procedure TProject.SetIgnoredFiles(const AValue: string);
+procedure TProject.SetIgnoredFiles(const Value: string);
 begin
-  if (FIgnoredFiles <> AValue) then
+  FIgnoredFiles := Value;
+  if (FIgnoredFiles <> Value) then
   begin
-    FIgnoredFiles := AValue;
+    FIgnoredFiles := Value;
     Modified := True;
   end;
 end;
@@ -858,9 +828,9 @@ begin
   end;
 end;
 
-procedure TProject.SetModified(const AValue: Boolean);
+procedure TProject.SetModified(const Value: Boolean);
 begin
-  FModified := AValue;
+  FModified := Value;
 end;
 
 {$IFDEF EXPERIMENTAL}
@@ -883,12 +853,12 @@ begin
   end;
 end;
 
-procedure TProject.SetScript(const AValue: String);
+procedure TProject.SetShowParserWarnings(const Value: Boolean);
 begin
-  if (not SameText(FScript, AValue)) then
+  if (Value <> FShowParserWarnings) then
   begin
-    FScript := AValue;
-    Modified := True;
+    FShowParserWarnings := Value;
+    FModified := True;
   end;
 end;
 
@@ -963,7 +933,6 @@ begin
 
   FEnabled := AIniFile.ReadBool(Section, ID_ENABLED, False);
   FLibraryName := AIniFile.ReadString(Section, ID_LIBRARY_NAME, '');
-  FDebugLibraryName := AIniFile.ReadString(Section, ID_DEBUG_LIBRARY_NAME, '');
   FPrefix := AIniFile.ReadString(Section, ID_PREFIX, '');
 end;
 
@@ -971,7 +940,6 @@ procedure TPlatform.Reset;
 begin
   FEnabled := (FPlatformType = TPlatformType.Win32);
   FLibraryName := '';
-  FDebugLibraryName := '';
   FPrefix := '';
 end;
 
@@ -982,17 +950,7 @@ begin
   Section := IS_PLATFORM_PREFIX + GetEnumName(TypeInfo(TPlatformType), Ord(FPlatformType));
   AIniFile.WriteBool(Section, ID_ENABLED, FEnabled);
   AIniFile.WriteString(Section, ID_LIBRARY_NAME, FLibraryName);
-  AIniFile.WriteString(Section, ID_DEBUG_LIBRARY_NAME, FDebugLibraryName);
   AIniFile.WriteString(Section, ID_PREFIX, FPrefix);
-end;
-
-procedure TPlatform.SetDebugLibraryName(const AValue: String);
-begin
-  if (AValue <> FDebugLibraryName) then
-  begin
-    FDebugLibraryName := AValue;
-    FProject.Modified := True;
-  end;
 end;
 
 procedure TPlatform.SetEnabled(const AValue: Boolean);
