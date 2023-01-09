@@ -141,6 +141,7 @@ type
     EditIgnoredHeaders: TEdit;
     LabelCustomTypes: TLabel;
     MemoCustomTypesMap: TMemo;
+    CheckBoxShowWarnings: TCheckBox;
     EditDebugDefine: TEdit;
     LabelDebugDefine: TLabel;
     EditLibDbgAndroid64: TEdit;
@@ -181,6 +182,7 @@ type
     procedure ActionSaveExecute(Sender: TObject);
     procedure ActionSaveAsExecute(Sender: TObject);
     procedure ActionExitExecute(Sender: TObject);
+    procedure ActionListUpdate(Action: TBasicAction; var Handled: Boolean);
     procedure ActionNewExecute(Sender: TObject);
     procedure ComboBoxEnumHandlingChange(Sender: TObject);
     procedure EditUseUnitsChange(Sender: TObject);
@@ -189,7 +191,8 @@ type
     procedure CheckBoxDelayedLoadingClick(Sender: TObject);
     procedure CheckBoxPrefixSymbolsWithUnderscoreClick(Sender: TObject);
     procedure ButtonClearScriptClick(Sender: TObject);
-    procedure ButtonScriptHelpClick(Sender: TObject);    
+    procedure ButtonScriptHelpClick(Sender: TObject);
+    procedure CheckBoxShowWarningsClick(Sender: TObject);
     procedure EditIgnoredHeadersChange(Sender: TObject);
     procedure MemoCustomTypesMapChange(Sender: TObject);
     procedure EditDebugDefineChange(Sender: TObject);
@@ -358,7 +361,12 @@ begin
   try
     Translator.OnMessage := HandleTranslatorMessage;
     Translator.Run;
-    TFilePostProcessor.Execute(FProject, ScriptMemo.Lines);
+    if ScriptMemo.Lines.Count > 0 then
+    begin
+      MemoMessages.Lines.Add('Running postprocessing scripts...');
+      TFilePostProcessor.Execute(FProject, ScriptMemo.Lines);
+      MemoMessages.Lines.Add('Postprocessing done!');
+    end;
   finally
     Translator.Free;
   end;
@@ -604,6 +612,16 @@ begin
   inherited;
 end;
 
+procedure TFormMain.ActionListUpdate(Action: TBasicAction; var Handled:    Boolean);
+begin
+  ActionRunTranslator.Enabled := not FProject.HeaderFileDirectory.IsEmpty and TDirectory.Exists(FProject.HeaderFileDirectory);
+end;
+
+procedure TFormMain.CheckBoxShowWarningsClick(Sender: TObject);
+begin
+  FProject.ShowParserWarnings := CheckBoxShowWarnings.Checked;
+end;
+
 procedure TFormMain.EditDebugDefineChange(Sender: TObject);
 begin
   FProject.DebugDefine := EditDebugDefine.Text;
@@ -758,6 +776,7 @@ begin
   EditUseUnits.Text := FProject.UseUnits;
 
   CheckBoxIgnoreParseErrors.Checked := FProject.IgnoreParseErrors;
+  CheckBoxShowWarnings.Checked := FProject.ShowParserWarnings;
   ListBoxCmdLineArgs.Items.DelimitedText := FProject.DelimitedCmdLineArgs;
 
   ComboBoxCallConv.ItemIndex := Ord(FProject.CallConv);

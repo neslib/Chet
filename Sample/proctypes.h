@@ -1,3 +1,9 @@
+#ifndef cdecl_apicall
+#define _APICALL      __stdcall
+#else
+ #define _APICALL     __cdecl
+#endif
+
 /// Procedural type without parameters or result
 typedef void (*SimpleProc)();
 
@@ -20,4 +26,4 @@ typedef int (*ProcOtherUnnamedParam)(int, float SomeParam);
 typedef int (*ProcVariableParams)(int SomeParam, ...);
 
 /// Procedural type without star
-typedef int (ProcNoStar)(int SomeParam); 
+typedef int _APICALL (ProcNoStar)(int SomeParam); 
