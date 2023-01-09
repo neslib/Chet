@@ -655,6 +655,9 @@ begin
   FPlatforms[TPlatformType.iOS].LibraryName := 'lib' + AProjectName + '_ios.a';
   FPlatforms[TPlatformType.Android32].LibraryName := 'lib' + AProjectName + '_android32.a';
   FPlatforms[TPlatformType.Android64].LibraryName := 'lib' + AProjectName + '_android64.a';
+  // default target win32/msvc
+  FCmdLineArgs.Add('--target=i686-pc-win32');
+  FCmdLineArgs.Add('--target=i686-pc-windows-msvc');
 end;
 
 procedure TProject.Reset;
