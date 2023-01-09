@@ -774,12 +774,12 @@ end;
 
 function THeaderTranslator.RemoveQualifiers(const ACTypeName: String): String;
 var
-  HasPrefix: Boolean;
+  HasPrefix,StartsWithUnderscore: Boolean;
 begin
   Result := ACTypeName;
 
   {$IFDEF EXPERIMENTAL}
-  var StartsWithUnderscore := False;
+  StartsWithUnderscore := False;
   if (FProject.PrefixSymbolsWithUnderscore) then
   begin
     StartsWithUnderscore := Result.StartsWith('_');

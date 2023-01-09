@@ -29,8 +29,6 @@ object FormMain: TFormMain
     Margins.Right = 4
     Margins.Bottom = 4
     Panels = <>
-    ExplicitTop = 430
-    ExplicitWidth = 654
   end
   object ButtonGroupCategories: TButtonGroup
     Left = 0
@@ -69,7 +67,6 @@ object FormMain: TFormMain
     ItemIndex = 0
     TabOrder = 1
     OnButtonClicked = ButtonGroupCategoriesButtonClicked
-    ExplicitHeight = 430
   end
   object CardPanel: TCardPanel
     Left = 126
@@ -81,13 +78,11 @@ object FormMain: TFormMain
     Margins.Right = 4
     Margins.Bottom = 4
     Align = alClient
-    ActiveCard = CardParseOptions
+    ActiveCard = CardTranslate
     BevelOuter = bvNone
     Padding.Left = 4
     Padding.Top = 4
     TabOrder = 2
-    ExplicitWidth = 528
-    ExplicitHeight = 430
     object CardProject: TCard
       Left = 4
       Top = 4
@@ -100,8 +95,6 @@ object FormMain: TFormMain
       Caption = 'Project'
       CardIndex = 0
       TabOrder = 0
-      ExplicitWidth = 524
-      ExplicitHeight = 426
       DesignSize = (
         428
         270)
@@ -161,7 +154,6 @@ object FormMain: TFormMain
         Anchors = [akLeft, akTop, akRight]
         TabOrder = 0
         OnChange = EditHeaderFileDirectoryChange
-        ExplicitWidth = 463
       end
       object ButtonBrowseHeaderFileDirectory: TButton
         Left = 370
@@ -176,7 +168,6 @@ object FormMain: TFormMain
         Caption = '...'
         TabOrder = 1
         OnClick = ButtonBrowseHeaderFileDirectoryClick
-        ExplicitLeft = 466
       end
       object CheckBoxIncludeSubdiretories: TCheckBox
         Left = 2
@@ -203,7 +194,6 @@ object FormMain: TFormMain
         Anchors = [akLeft, akTop, akRight]
         TabOrder = 4
         OnChange = EditPasFileChange
-        ExplicitWidth = 463
       end
       object ButtonBrowsePasFile: TButton
         Left = 370
@@ -218,7 +208,6 @@ object FormMain: TFormMain
         Caption = '...'
         TabOrder = 5
         OnClick = ButtonBrowsePasFileClick
-        ExplicitLeft = 466
       end
       object EditUseUnits: TEdit
         Left = 2
@@ -232,7 +221,6 @@ object FormMain: TFormMain
         Anchors = [akLeft, akTop, akRight]
         TabOrder = 6
         OnChange = EditUseUnitsChange
-        ExplicitWidth = 497
       end
       object EditIgnoredHeaders: TEdit
         Left = 2
@@ -249,7 +237,6 @@ object FormMain: TFormMain
         Anchors = [akLeft, akTop, akRight]
         TabOrder = 3
         OnChange = EditIgnoredHeadersChange
-        ExplicitWidth = 497
       end
     end
     object CardPlatforms: TCard
@@ -264,8 +251,6 @@ object FormMain: TFormMain
       Caption = 'Platforms'
       CardIndex = 1
       TabOrder = 4
-      ExplicitWidth = 524
-      ExplicitHeight = 426
       object LabelPlatform: TLabel
         Left = 6
         Top = 68
@@ -789,8 +774,6 @@ object FormMain: TFormMain
       Caption = 'Parse Options'
       CardIndex = 2
       TabOrder = 1
-      ExplicitWidth = 524
-      ExplicitHeight = 426
       object LabelCmdLineArgs: TLabel
         Left = 2
         Top = 24
@@ -903,8 +886,6 @@ object FormMain: TFormMain
       Caption = 'Conversion Options'
       CardIndex = 3
       TabOrder = 3
-      ExplicitWidth = 524
-      ExplicitHeight = 426
       DesignSize = (
         428
         270)
@@ -1177,7 +1158,7 @@ object FormMain: TFormMain
         Left = 2
         Top = 282
         Width = 407
-        Height = -22
+        Height = 0
         Hint = 
           'Input format: CTypeName=DelphiTypeName. Use CTRL + ENTER to inse' +
           'rt new line.'
@@ -1189,8 +1170,6 @@ object FormMain: TFormMain
         TabOrder = 10
         WantReturns = False
         WordWrap = False
-        ExplicitWidth = 503
-        ExplicitHeight = 134
       end
     end
     object CardIgnore: TCard
@@ -1205,13 +1184,11 @@ object FormMain: TFormMain
       Caption = 'Ignore'
       CardIndex = 4
       TabOrder = 5
-      ExplicitWidth = 524
-      ExplicitHeight = 426
       object LabelIgnore: TLabel
         AlignWithMargins = True
         Left = 6
         Top = 4
-        Width = 502
+        Width = 418
         Height = 26
         Margins.Left = 6
         Margins.Top = 4
@@ -1223,13 +1200,14 @@ object FormMain: TFormMain
           'be translated. Enter one symbol per line. Symbols are case-sensi' +
           'tive.'
         WordWrap = True
+        ExplicitWidth = 502
       end
       object MemoIgnore: TMemo
         AlignWithMargins = True
         Left = 4
         Top = 34
-        Width = 516
-        Height = 388
+        Width = 420
+        Height = 232
         Margins.Left = 4
         Margins.Top = 0
         Margins.Right = 4
@@ -1253,8 +1231,6 @@ object FormMain: TFormMain
       Caption = 'PostProcess'
       CardIndex = 5
       TabOrder = 6
-      ExplicitWidth = 524
-      ExplicitHeight = 426
       DesignSize = (
         428
         270)
@@ -1332,32 +1308,31 @@ object FormMain: TFormMain
       Caption = 'Translate'
       CardIndex = 6
       TabOrder = 2
-      ExplicitWidth = 524
-      ExplicitHeight = 426
       object ButtonRunTranslator: TButton
-        Left = 2
+        Left = 0
         Top = 0
-        Width = 152
+        Width = 428
         Height = 26
         Margins.Left = 4
         Margins.Top = 4
         Margins.Right = 4
         Margins.Bottom = 4
         Action = ActionRunTranslator
+        Align = alTop
         TabOrder = 0
+        ExplicitLeft = 2
+        ExplicitWidth = 152
       end
       object MemoMessages: TMemo
         AlignWithMargins = True
         Left = 2
-        Top = 28
-        Width = 522
-        Height = 398
+        Top = 30
+        Width = 426
+        Height = 240
         Margins.Left = 2
         Margins.Top = 0
         Margins.Right = 0
         Margins.Bottom = 0
-        Align = alBottom
-        Anchors = [akLeft, akTop, akRight, akBottom]
         ScrollBars = ssVertical
         TabOrder = 1
       end

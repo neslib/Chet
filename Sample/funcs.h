@@ -29,4 +29,4 @@ int FuncVariableParams(int SomeParam, ...);
 int FuncProcTypeParam(void (*fn)(float), void *Data);
 
 /// Func with param of procedural type
-int APICALL FuncProcTypeParam2(void (*fn)(float), void *Data);
+int APICALL FuncProcTypeParam2(void APICALL (*fn)(float), void *Data);

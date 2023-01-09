@@ -58,7 +58,7 @@ Prefix=
 
 [ParseOptions]
 IgnoreParseErrors=1
-CmdLineArgs=
+CmdLineArgs=--target=i686-pc-win32,--target=i686-pc-windows-msvc
 
 [ConvertOptions]
 CallConv=Cdecl
