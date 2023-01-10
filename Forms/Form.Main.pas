@@ -42,7 +42,6 @@ type
     ActionList: TActionList;
     OpenDirectoryDialog: TFileOpenDialog;
     SaveDialogProject: TFileSaveDialog;
-    CheckBoxIgnoreParseErrors: TCheckBox;
     ActionAddCmdLineArg: TAction;
     ActionAddIncludePath: TAction;
     ActionAddDefine: TAction;
@@ -51,12 +50,6 @@ type
     EditHeaderFileDirectory: TEdit;
     ButtonBrowseHeaderFileDirectory: TButton;
     CheckBoxIncludeSubdiretories: TCheckBox;
-    ListBoxCmdLineArgs: TListBox;
-    LabelCmdLineArgs: TLabel;
-    ButtonAddCmdLineArg: TButton;
-    ButtonDeleteArgument: TButton;
-    ButtonAddDefine: TButton;
-    ButtonAddIncludePath: TButton;
     CardTranslate: TCard;
     ButtonRunTranslator: TButton;
     ActionRunTranslator: TAction;
@@ -141,7 +134,6 @@ type
     EditIgnoredHeaders: TEdit;
     LabelCustomTypes: TLabel;
     MemoCustomTypesMap: TMemo;
-    CheckBoxShowWarnings: TCheckBox;
     EditDebugDefine: TEdit;
     LabelDebugDefine: TLabel;
     EditLibDbgAndroid64: TEdit;
@@ -154,6 +146,20 @@ type
     EditLibDbgWin32: TEdit;
     LabelDebugLibraryName: TLabel;
     ButtonTranslate: TButton;
+    PanelWinSDKControls: TPanel;
+    LabelWinSDKVersion: TLabel;
+    ComboBoxWinSDKVersion: TComboBox;
+    PanelDiagMessagesOpts: TPanel;
+    CheckBoxIgnoreParseErrors: TCheckBox;
+    CheckBoxShowWarnings: TCheckBox;
+    PanelCMDLineArgs: TPanel;
+    LabelCmdLineArgs: TLabel;
+    ListBoxCmdLineArgs: TListBox;
+    PanelCMDLineArgsControls: TPanel;
+    ButtonAddCmdLineArg: TButton;
+    ButtonAddDefine: TButton;
+    ButtonAddIncludePath: TButton;
+    ButtonDeleteArgument: TButton;
     procedure ButtonGroupCategoriesButtonClicked(Sender: TObject; Index: Integer);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure ActionAddCmdLineArgExecute(Sender: TObject);
@@ -200,6 +206,7 @@ type
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure ButtonTranslateClick(Sender: TObject);
+    procedure ComboBoxWinSDKVersionChange(Sender: TObject);
     procedure ScriptMemoChange(Sender: TObject);
   private
     { Private declarations }
@@ -210,6 +217,7 @@ type
     FPlatformPrefix: array [TPlatformType] of TEdit;
     FFormScriptHelp: TFormScriptHelp;
     FScriptChanged: Boolean;
+    FWinSdkRoot: string;
     procedure NewProject(const AProjectName: String);
     procedure CheckScriptChanged;
     function CheckSave: Boolean;
@@ -222,10 +230,12 @@ type
     procedure UpdateControls;
     procedure UpdatePlatformControls; overload;
     procedure UpdatePlatformControls(const APlatform: TPlatformType); overload;
+    procedure UpdateSDKControlCombo;
     procedure AddCommandLineArgument(const AArgument: String);
     procedure ConfigError(const AMessage: String;
       const AControlToFocus: TWinControl = nil);
     procedure HandleTranslatorMessage(const AMessage: String);
+    procedure ReadWinSDKRoot;
   public
     { Public declarations }
     constructor Create(AOwner: TComponent); override;
@@ -240,7 +250,8 @@ implementation
 {$R *.dfm}
 
 uses
-  Chet.Postprocessor;
+  Chet.Postprocessor,
+  Win.Registry;
 
 procedure TFormMain.ActionAddCmdLineArgExecute(Sender: TObject);
 begin
@@ -599,6 +610,8 @@ begin
   FPlatformPrefix[TPlatformType.Android32] := EditPrefixAndroid32;
   FPlatformPrefix[TPlatformType.Android64] := EditPrefixAndroid64;
 
+  ReadWinSDKRoot;
+
   if (ParamCount > 0) then
     Load(ParamStr(1));
 
@@ -620,6 +633,27 @@ end;
 procedure TFormMain.CheckBoxShowWarningsClick(Sender: TObject);
 begin
   FProject.ShowParserWarnings := CheckBoxShowWarnings.Checked;
+end;
+
+procedure TFormMain.ComboBoxWinSDKVersionChange(Sender: TObject);
+var
+  IncludeRoot,EnvVarValue: string;
+begin
+  if (ComboBoxWinSDKVersion.ItemIndex < 0) or FWinSdkRoot.IsEmpty then Exit;
+
+  EnvVarValue := ComboBoxWinSDKVersion.Items[ComboBoxWinSDKVersion.ItemIndex];
+  IncludeRoot := Format(FWinSdkRoot+'Include'+PathDelim+'%s',[EnvVarValue]);
+  if TDirectory.Exists(IncludeRoot) then
+  begin
+    envVarValue :=
+      IncludeTrailingPathDelimiter(IncludeRoot)+'ucrt;' +
+      IncludeTrailingPathDelimiter(IncludeRoot)+'um;'+
+      IncludeTrailingPathDelimiter(IncludeRoot)+'shared';
+  end
+  else
+    envVarValue := '';
+
+  SetEnvironmentVariable(PChar(cWindowsSDK_IncludePaths),PChar(EnvVarValue));
 end;
 
 procedure TFormMain.EditDebugDefineChange(Sender: TObject);
@@ -741,6 +775,30 @@ begin
   SetControls;
 end;
 
+procedure TFormMain.ReadWinSDKRoot;
+var
+  R: TRegistry;
+begin
+  FWinSdkRoot := '';
+  R := TRegistry.Create(KEY_READ OR KEY_WOW64_32KEY);
+  try
+    R.RootKey := HKEY_LOCAL_MACHINE;
+    if R.KeyExists('\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v10.0') and
+       R.OpenKeyReadOnly('\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v10.0') then //!!! that about not win10sdks?
+    begin
+      FWinSdkRoot := R.ReadString('InstallationFolder');
+    end;
+  finally
+    R.Free;
+  end;
+
+  if not FWinSdkRoot.IsEmpty and not TDirectory.Exists(FWinSdkRoot) then
+    FWinSdkRoot := '';
+
+  if not FWinSdkRoot.IsEmpty and not SetEnvironmentVariable(PChar(cWindowsSDKRoot),PChar(FWinSdkRoot)) then
+      FWinSdkRoot := '';
+end;
+
 function TFormMain.Save: Boolean;
 begin
   if (FProject.ProjectFilename = '') then
@@ -807,6 +865,8 @@ begin
 
   CardPanel.ActiveCard := CardProject;
   ButtonGroupCategories.ItemIndex := 0;
+
+  UpdateSDKControlCombo;
 end;
 
 procedure TFormMain.SetPlatformControls;
@@ -856,6 +916,19 @@ begin
   FPlatformLibraryName[APlatform].Enabled := B;
   FPlatformDebugLibraryName[APlatform].Enabled := B;
   FPlatformPrefix[APlatform].Enabled := B;
+end;
+
+procedure TFormMain.UpdateSDKControlCombo;
+var
+  S: string;
+begin
+  ComboBoxWinSDKVersion.Clear;
+
+  if not FWinSdkRoot.IsEmpty then
+    for S in TDirectory.GetDirectories(IncludeTrailingPathDelimiter(FWinSdkRoot)+'Include') do
+      ComboBoxWinSDKVersion.Items.Add(ExtractFileName(S));
+
+  PanelWinSDKControls.Visible := ComboBoxWinSDKVersion.Items.Count > 0;
 end;
 
 end.

@@ -707,7 +707,7 @@ end;
 
 function THeaderTranslator.ParseCombinedHeaderFile: Boolean;
 var
-  Args: TArray<String>;
+  Args,WinSdkIncludePaths : TArray<String>;
   Options: TTranslationUnitFlags;
   DiagOpts: TDiagnosticDisplayOptions;
   Diag: IDiagnostic;
@@ -739,6 +739,9 @@ begin
   end;
 
   Args := Args + ['-I' + FProject.HeaderFileDirectory];
+  WinSdkIncludePaths := FProject.WinSDKIncludePaths;
+  for I := 0 to High(WinSdkIncludePaths) do
+    Args := Args + ['-I'+WinSdkIncludePaths[I]];
 
   FTranslationUnit := FIndex.ParseTranslationUnit(FCombinedHeaderFilename,
     Args, [], Options);
@@ -1346,12 +1349,10 @@ var
   StringConcatPlusInserted : Boolean;
 begin
   StringConcatPlusInserted := False;
-
   for I := StartIndex to Count - 1 do
   begin
     S := Tokens[I];
     IsString := False;
-
     { Issue #4 (https://github.com/neslib/Chet/issues/4)
       Convert wide character string constant (L"...").
       These are the supported prefixes:

@@ -8,6 +8,12 @@ uses
   System.IniFiles,
   System.TypInfo;
 
+const
+  { MS Windows SDK Root folder environment variable name}
+  cWindowsSDKRoot = 'WindowsSDK_Root';
+  { MS Windows SDK include folders environment variable name }
+  cWindowsSDK_IncludePaths = 'WindowsSDK_IncludePaths';
+
 {$SCOPEDENUMS ON}
 
 type
@@ -274,6 +280,8 @@ type
       Parameters:
         AIndex: index of the command line argument to delete. }
     procedure DeleteCmdLineArg(const AIndex: Integer);
+
+    function WinSDKIncludePaths: TArray<String>;
 
     { Name of the project file containing the configuration settings for this
       project. }
@@ -958,6 +966,11 @@ end;
 procedure TProject.SymbolsToIgnoreChange(Sender: TObject);
 begin
   FModified := True;
+end;
+
+function TProject.WinSDKIncludePaths: TArray<String>;
+begin
+  Result := GetEnvironmentVariable(cWindowsSDK_IncludePaths).Split([';'],'"','"',TStringSplitOptions.ExcludeEmpty);
 end;
 
 { TPlatform }

@@ -1,9 +1,4 @@
-#ifndef cdecl_apicall
-#define APICALL      __stdcall
-#else
- #define APICALL     __cdecl
-#endif
-
+#include <windows.h>
 /// Func without parameters or result
 void SimpleFunc();
 
@@ -29,4 +24,4 @@ int FuncVariableParams(int SomeParam, ...);
 int FuncProcTypeParam(void (*fn)(float), void *Data);
 
 /// Func with param of procedural type
-int APICALL FuncProcTypeParam2(void APICALL (*fn)(float), void *Data);
+int WINAPI FuncProcTypeParam2(void CALLBACK (*fn)(float), void *Data);

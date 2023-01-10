@@ -4,9 +4,10 @@ object FormMain: TFormMain
   Caption = 'Chet - C header translator'
   ClientHeight = 294
   ClientWidth = 558
-  Color = clBtnFace
+  Color = clWindow
   Constraints.MinHeight = 380
   Constraints.MinWidth = 580
+  Ctl3D = False
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -11
@@ -78,7 +79,7 @@ object FormMain: TFormMain
     Margins.Right = 4
     Margins.Bottom = 4
     Align = alClient
-    ActiveCard = CardTranslate
+    ActiveCard = CardParseOptions
     BevelOuter = bvNone
     Padding.Left = 4
     Padding.Top = 4
@@ -146,7 +147,7 @@ object FormMain: TFormMain
         Left = 2
         Top = 16
         Width = 367
-        Height = 21
+        Height = 19
         Margins.Left = 4
         Margins.Top = 4
         Margins.Right = 4
@@ -186,7 +187,7 @@ object FormMain: TFormMain
         Left = 2
         Top = 124
         Width = 367
-        Height = 21
+        Height = 19
         Margins.Left = 4
         Margins.Top = 4
         Margins.Right = 4
@@ -213,7 +214,7 @@ object FormMain: TFormMain
         Left = 2
         Top = 168
         Width = 401
-        Height = 21
+        Height = 19
         Margins.Left = 4
         Margins.Top = 4
         Margins.Right = 4
@@ -226,7 +227,7 @@ object FormMain: TFormMain
         Left = 2
         Top = 82
         Width = 401
-        Height = 21
+        Height = 19
         Hint = 
           'eq. ".\subdir1\header1.h,subdir2\header2.h" or "header1.h,.\head' +
           'er2.h"'
@@ -321,7 +322,7 @@ object FormMain: TFormMain
         Left = 118
         Top = 84
         Width = 126
-        Height = 21
+        Height = 19
         Margins.Left = 4
         Margins.Top = 4
         Margins.Right = 4
@@ -347,7 +348,7 @@ object FormMain: TFormMain
         Left = 118
         Top = 110
         Width = 126
-        Height = 21
+        Height = 19
         Margins.Left = 4
         Margins.Top = 4
         Margins.Right = 4
@@ -388,7 +389,7 @@ object FormMain: TFormMain
         Left = 118
         Top = 138
         Width = 126
-        Height = 21
+        Height = 19
         Margins.Left = 4
         Margins.Top = 4
         Margins.Right = 4
@@ -415,7 +416,7 @@ object FormMain: TFormMain
         Left = 118
         Top = 192
         Width = 126
-        Height = 21
+        Height = 19
         Margins.Left = 4
         Margins.Top = 4
         Margins.Right = 4
@@ -442,7 +443,7 @@ object FormMain: TFormMain
         Left = 118
         Top = 218
         Width = 126
-        Height = 21
+        Height = 19
         Margins.Left = 4
         Margins.Top = 4
         Margins.Right = 4
@@ -469,7 +470,7 @@ object FormMain: TFormMain
         Left = 118
         Top = 246
         Width = 126
-        Height = 21
+        Height = 19
         Margins.Left = 4
         Margins.Top = 4
         Margins.Right = 4
@@ -481,7 +482,7 @@ object FormMain: TFormMain
         Left = 380
         Top = 84
         Width = 30
-        Height = 21
+        Height = 19
         Margins.Left = 4
         Margins.Top = 4
         Margins.Right = 4
@@ -494,7 +495,7 @@ object FormMain: TFormMain
         Left = 380
         Top = 110
         Width = 30
-        Height = 21
+        Height = 19
         Margins.Left = 4
         Margins.Top = 4
         Margins.Right = 4
@@ -507,7 +508,7 @@ object FormMain: TFormMain
         Left = 380
         Top = 138
         Width = 30
-        Height = 21
+        Height = 19
         Margins.Left = 4
         Margins.Top = 4
         Margins.Right = 4
@@ -520,7 +521,7 @@ object FormMain: TFormMain
         Left = 380
         Top = 192
         Width = 30
-        Height = 21
+        Height = 19
         Margins.Left = 4
         Margins.Top = 4
         Margins.Right = 4
@@ -533,7 +534,7 @@ object FormMain: TFormMain
         Left = 380
         Top = 218
         Width = 30
-        Height = 21
+        Height = 19
         Margins.Left = 4
         Margins.Top = 4
         Margins.Right = 4
@@ -546,7 +547,7 @@ object FormMain: TFormMain
         Left = 380
         Top = 246
         Width = 30
-        Height = 21
+        Height = 19
         Margins.Left = 4
         Margins.Top = 4
         Margins.Right = 4
@@ -558,7 +559,7 @@ object FormMain: TFormMain
         Left = 118
         Top = 4
         Width = 176
-        Height = 21
+        Height = 19
         Margins.Left = 4
         Margins.Top = 4
         Margins.Right = 4
@@ -585,7 +586,7 @@ object FormMain: TFormMain
         Left = 118
         Top = 164
         Width = 126
-        Height = 21
+        Height = 19
         Margins.Left = 4
         Margins.Top = 4
         Margins.Right = 4
@@ -598,7 +599,7 @@ object FormMain: TFormMain
         Left = 380
         Top = 164
         Width = 30
-        Height = 21
+        Height = 19
         Margins.Left = 4
         Margins.Top = 4
         Margins.Right = 4
@@ -625,7 +626,7 @@ object FormMain: TFormMain
         Left = 118
         Top = 272
         Width = 126
-        Height = 21
+        Height = 19
         Margins.Left = 4
         Margins.Top = 4
         Margins.Right = 4
@@ -638,7 +639,7 @@ object FormMain: TFormMain
         Left = 380
         Top = 272
         Width = 30
-        Height = 21
+        Height = 19
         Margins.Left = 4
         Margins.Top = 4
         Margins.Right = 4
@@ -650,7 +651,7 @@ object FormMain: TFormMain
         Left = 118
         Top = 32
         Width = 176
-        Height = 21
+        Height = 19
         Margins.Left = 4
         Margins.Top = 4
         Margins.Right = 4
@@ -663,7 +664,7 @@ object FormMain: TFormMain
         Left = 250
         Top = 272
         Width = 124
-        Height = 21
+        Height = 19
         Margins.Left = 4
         Margins.Top = 4
         Margins.Right = 4
@@ -676,7 +677,7 @@ object FormMain: TFormMain
         Left = 250
         Top = 246
         Width = 124
-        Height = 21
+        Height = 19
         Margins.Left = 4
         Margins.Top = 4
         Margins.Right = 4
@@ -689,7 +690,7 @@ object FormMain: TFormMain
         Left = 250
         Top = 218
         Width = 124
-        Height = 21
+        Height = 19
         Margins.Left = 4
         Margins.Top = 4
         Margins.Right = 4
@@ -702,7 +703,7 @@ object FormMain: TFormMain
         Left = 250
         Top = 192
         Width = 124
-        Height = 21
+        Height = 19
         Margins.Left = 4
         Margins.Top = 4
         Margins.Right = 4
@@ -715,7 +716,7 @@ object FormMain: TFormMain
         Left = 250
         Top = 164
         Width = 124
-        Height = 21
+        Height = 19
         Margins.Left = 4
         Margins.Top = 4
         Margins.Right = 4
@@ -728,7 +729,7 @@ object FormMain: TFormMain
         Left = 250
         Top = 138
         Width = 124
-        Height = 21
+        Height = 19
         Margins.Left = 4
         Margins.Top = 4
         Margins.Right = 4
@@ -741,7 +742,7 @@ object FormMain: TFormMain
         Left = 250
         Top = 110
         Width = 124
-        Height = 21
+        Height = 19
         Margins.Left = 4
         Margins.Top = 4
         Margins.Right = 4
@@ -753,7 +754,7 @@ object FormMain: TFormMain
         Left = 250
         Top = 84
         Width = 124
-        Height = 21
+        Height = 19
         Margins.Left = 4
         Margins.Top = 4
         Margins.Right = 4
@@ -774,104 +775,182 @@ object FormMain: TFormMain
       Caption = 'Parse Options'
       CardIndex = 2
       TabOrder = 1
-      object LabelCmdLineArgs: TLabel
-        Left = 2
-        Top = 24
-        Width = 205
-        Height = 13
-        Margins.Left = 4
-        Margins.Top = 4
-        Margins.Right = 4
-        Margins.Bottom = 4
-        Caption = 'Command line arguments to pass to Clang:'
-      end
-      object CheckBoxIgnoreParseErrors: TCheckBox
-        Left = 4
-        Top = 3
-        Width = 151
-        Height = 16
-        Margins.Left = 4
-        Margins.Top = 4
-        Margins.Right = 4
-        Margins.Bottom = 4
-        Caption = 'Ignore parse errors'
+      ExplicitLeft = -28
+      ExplicitTop = 2
+      object PanelWinSDKControls: TPanel
+        Left = 0
+        Top = 229
+        Width = 428
+        Height = 41
+        Align = alBottom
+        BevelOuter = bvNone
         TabOrder = 0
-        OnClick = CheckBoxIgnoreParseErrorsClick
+        Visible = False
+        ExplicitLeft = 3
+        ExplicitTop = 206
+        object LabelWinSDKVersion: TLabel
+          Left = 4
+          Top = 9
+          Width = 79
+          Height = 13
+          Margins.Left = 4
+          Margins.Top = 4
+          Margins.Right = 4
+          Margins.Bottom = 4
+          Caption = 'WinSDK version:'
+        end
+        object ComboBoxWinSDKVersion: TComboBox
+          Left = 101
+          Top = 6
+          Width = 324
+          Height = 21
+          Style = csDropDownList
+          TabOrder = 0
+          TextHint = 'not selected'
+          OnChange = ComboBoxWinSDKVersionChange
+        end
       end
-      object CheckBoxShowWarnings: TCheckBox
-        Left = 151
-        Top = 6
-        Width = 130
-        Height = 16
-        Hint = 'Display warnings and diagnostic messages'
-        Margins.Left = 1
-        Margins.Top = 1
-        Margins.Right = 1
-        Margins.Bottom = 1
-        Caption = 'Show warnings'
-        TabOrder = 6
-        OnClick = CheckBoxShowWarningsClick
-      end
-      object ListBoxCmdLineArgs: TListBox
-        Left = 2
-        Top = 38
-        Width = 404
-        Height = 114
-        Margins.Left = 4
-        Margins.Top = 4
-        Margins.Right = 4
-        Margins.Bottom = 4
-        ItemHeight = 13
+      object PanelDiagMessagesOpts: TPanel
+        Left = 0
+        Top = 0
+        Width = 428
+        Height = 28
+        Align = alTop
+        BevelOuter = bvNone
         TabOrder = 1
-        OnClick = ListBoxCmdLineArgsClick
+        object CheckBoxIgnoreParseErrors: TCheckBox
+          Left = 4
+          Top = 7
+          Width = 151
+          Height = 16
+          Margins.Left = 4
+          Margins.Top = 4
+          Margins.Right = 4
+          Margins.Bottom = 4
+          Caption = 'Ignore parse errors'
+          TabOrder = 0
+          OnClick = CheckBoxIgnoreParseErrorsClick
+        end
+        object CheckBoxShowWarnings: TCheckBox
+          Left = 135
+          Top = 7
+          Width = 130
+          Height = 16
+          Hint = 'Display warnings and diagnostic messages'
+          Margins.Left = 1
+          Margins.Top = 1
+          Margins.Right = 1
+          Margins.Bottom = 1
+          Caption = 'Show warnings'
+          TabOrder = 1
+          OnClick = CheckBoxShowWarningsClick
+        end
       end
-      object ButtonAddCmdLineArg: TButton
-        Left = 2
-        Top = 158
-        Width = 100
-        Height = 26
-        Margins.Left = 4
-        Margins.Top = 4
-        Margins.Right = 4
-        Margins.Bottom = 4
-        Action = ActionAddCmdLineArg
+      object PanelCMDLineArgs: TPanel
+        Left = 0
+        Top = 28
+        Width = 428
+        Height = 201
+        Align = alClient
+        BevelOuter = bvNone
         TabOrder = 2
-      end
-      object ButtonDeleteArgument: TButton
-        Left = 304
-        Top = 158
-        Width = 100
-        Height = 26
-        Margins.Left = 4
-        Margins.Top = 4
-        Margins.Right = 4
-        Margins.Bottom = 4
-        Action = ActionDeleteCmdLineArg
-        TabOrder = 5
-      end
-      object ButtonAddDefine: TButton
-        Left = 104
-        Top = 158
-        Width = 100
-        Height = 26
-        Margins.Left = 4
-        Margins.Top = 4
-        Margins.Right = 4
-        Margins.Bottom = 4
-        Action = ActionAddDefine
-        TabOrder = 3
-      end
-      object ButtonAddIncludePath: TButton
-        Left = 204
-        Top = 158
-        Width = 100
-        Height = 26
-        Margins.Left = 4
-        Margins.Top = 4
-        Margins.Right = 4
-        Margins.Bottom = 4
-        Action = ActionAddIncludePath
-        TabOrder = 4
+        ExplicitLeft = 77
+        ExplicitTop = -17
+        ExplicitWidth = 185
+        ExplicitHeight = 41
+        object LabelCmdLineArgs: TLabel
+          Left = 0
+          Top = 0
+          Width = 428
+          Height = 13
+          Margins.Left = 4
+          Margins.Top = 4
+          Margins.Right = 4
+          Margins.Bottom = 4
+          Align = alTop
+          Caption = 'Command line arguments to pass to Clang:'
+          ExplicitLeft = -20
+          ExplicitTop = 28
+          ExplicitWidth = 205
+        end
+        object ListBoxCmdLineArgs: TListBox
+          Left = 0
+          Top = 13
+          Width = 428
+          Height = 147
+          Margins.Left = 4
+          Margins.Top = 4
+          Margins.Right = 4
+          Margins.Bottom = 4
+          Align = alClient
+          ItemHeight = 13
+          TabOrder = 0
+          OnClick = ListBoxCmdLineArgsClick
+          ExplicitLeft = 1
+          ExplicitTop = 72
+          ExplicitWidth = 426
+          ExplicitHeight = 43
+        end
+        object PanelCMDLineArgsControls: TPanel
+          Left = 0
+          Top = 160
+          Width = 428
+          Height = 41
+          Align = alBottom
+          BevelOuter = bvNone
+          TabOrder = 1
+          ExplicitLeft = 328
+          ExplicitTop = 64
+          ExplicitWidth = 185
+          object ButtonAddCmdLineArg: TButton
+            Left = 4
+            Top = 8
+            Width = 100
+            Height = 26
+            Margins.Left = 4
+            Margins.Top = 4
+            Margins.Right = 4
+            Margins.Bottom = 4
+            Action = ActionAddCmdLineArg
+            TabOrder = 0
+          end
+          object ButtonAddDefine: TButton
+            Left = 111
+            Top = 8
+            Width = 100
+            Height = 26
+            Margins.Left = 4
+            Margins.Top = 4
+            Margins.Right = 4
+            Margins.Bottom = 4
+            Action = ActionAddDefine
+            TabOrder = 1
+          end
+          object ButtonAddIncludePath: TButton
+            Left = 219
+            Top = 8
+            Width = 100
+            Height = 26
+            Margins.Left = 4
+            Margins.Top = 4
+            Margins.Right = 4
+            Margins.Bottom = 4
+            Action = ActionAddIncludePath
+            TabOrder = 2
+          end
+          object ButtonDeleteArgument: TButton
+            Left = 328
+            Top = 8
+            Width = 100
+            Height = 26
+            Margins.Left = 4
+            Margins.Top = 4
+            Margins.Right = 4
+            Margins.Bottom = 4
+            Action = ActionDeleteCmdLineArg
+            TabOrder = 3
+          end
+        end
       end
     end
     object CardConversionOptions: TCard
@@ -1200,7 +1279,7 @@ object FormMain: TFormMain
           'be translated. Enter one symbol per line. Symbols are case-sensi' +
           'tive.'
         WordWrap = True
-        ExplicitWidth = 502
+        ExplicitWidth = 403
       end
       object MemoIgnore: TMemo
         AlignWithMargins = True
@@ -1320,19 +1399,18 @@ object FormMain: TFormMain
         Action = ActionRunTranslator
         Align = alTop
         TabOrder = 0
-        ExplicitLeft = 2
-        ExplicitWidth = 152
       end
       object MemoMessages: TMemo
         AlignWithMargins = True
         Left = 2
-        Top = 30
+        Top = 26
         Width = 426
-        Height = 240
+        Height = 244
         Margins.Left = 2
         Margins.Top = 0
         Margins.Right = 0
         Margins.Bottom = 0
+        Align = alClient
         ScrollBars = ssVertical
         TabOrder = 1
       end
