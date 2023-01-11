@@ -10,6 +10,8 @@ uses
   System.SysUtils,
   System.Variants,
   System.Classes,
+  Generics.Defaults,
+  Generics.Collections,
   System.Actions,
   System.UITypes,
   System.IOUtils,
@@ -132,8 +134,6 @@ type
     ButtonScriptHelp: TButton;
     LabelIgnoredHeaders: TLabel;
     EditIgnoredHeaders: TEdit;
-    LabelCustomTypes: TLabel;
-    MemoCustomTypesMap: TMemo;
     EditDebugDefine: TEdit;
     LabelDebugDefine: TLabel;
     EditLibDbgAndroid64: TEdit;
@@ -160,6 +160,8 @@ type
     ButtonAddDefine: TButton;
     ButtonAddIncludePath: TButton;
     ButtonDeleteArgument: TButton;
+    GroupBoxCustomTypes: TGroupBox;
+    MemoCustomTypesMap: TMemo;
     procedure ButtonGroupCategoriesButtonClicked(Sender: TObject; Index: Integer);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure ActionAddCmdLineArgExecute(Sender: TObject);
@@ -918,17 +920,82 @@ begin
   FPlatformPrefix[APlatform].Enabled := B;
 end;
 
+
 procedure TFormMain.UpdateSDKControlCombo;
 var
   S: string;
+  I: Integer;
+  Versions: TArray<string>;
 begin
-  ComboBoxWinSDKVersion.Clear;
+  ComboBoxWinSDKVersion.Items.BeginUpdate;
+  try
+    ComboBoxWinSDKVersion.Clear;
 
-  if not FWinSdkRoot.IsEmpty then
-    for S in TDirectory.GetDirectories(IncludeTrailingPathDelimiter(FWinSdkRoot)+'Include') do
-      ComboBoxWinSDKVersion.Items.Add(ExtractFileName(S));
+    if not FWinSdkRoot.IsEmpty then
 
-  PanelWinSDKControls.Visible := ComboBoxWinSDKVersion.Items.Count > 0;
+    Versions := TDirectory.GetDirectories(IncludeTrailingPathDelimiter(FWinSdkRoot)+'Include');
+
+    for I := 0 to High(Versions) do
+      Versions[I] := ExtractFileName(Versions[I]);
+
+    if Length(Versions) > 1 then
+    begin
+      TArray.Sort<string>(Versions,TComparer<string>.Construct(
+        function(const Left, Right: string): Integer
+        var
+          StrCmpResult, I, J, II,JJ, LeftNum, RightNum: Integer;
+        begin
+          StrCmpResult := TComparer<string>.Default.Compare(Left, Right);
+          if (StrCmpResult = 0) or ((Left.IndexOf('.') < 0) and (Right.IndexOf('.') < 0)) then
+            Exit(StrCmpResult);
+
+          J := 1;
+          I := 1;
+
+          while (I <  Left.Length) or (J <  Right.Length) do
+          begin
+            II := I;
+            while (II <  Left.Length) and (Left [II] <> '.') do
+              Inc(II);
+
+            LeftNum := StrToIntDef(Copy(Left,I,II-I), 0);
+
+            JJ := J;
+            while (JJ <  Right.Length) and (Right[JJ] <> '.') do
+              Inc(JJ);
+
+            RightNum :=  StrToIntDef(Copy(Right,J,JJ-J), 0);
+
+            Result := TComparer<Integer>.Default.Compare(LeftNum, RightNum);
+
+            if Result <> 0 then
+              Exit(-Result); // descending sort order
+
+            I := II;
+            J := JJ;
+
+            Inc(I);
+            Inc(J);
+          end;
+
+          Result := StrCmpResult;
+        end
+      ));
+    end;
+
+    for S in Versions do
+      ComboBoxWinSDKVersion.Items.Add(S);
+
+    PanelWinSDKControls.Visible := ComboBoxWinSDKVersion.Items.Count > 0;
+    if PanelWinSDKControls.Visible then
+    begin
+      ComboBoxWinSDKVersion.ItemIndex := 0;
+      ComboBoxWinSDKVersionChange(ComboBoxWinSDKVersion);
+    end;
+
+  finally
+    ComboBoxWinSDKVersion.Items.EndUpdate;
+  end;
 end;
 
 end.

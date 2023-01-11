@@ -30,6 +30,8 @@ object FormMain: TFormMain
     Margins.Right = 4
     Margins.Bottom = 4
     Panels = <>
+    ExplicitLeft = -9
+    ExplicitTop = 251
   end
   object ButtonGroupCategories: TButtonGroup
     Left = 0
@@ -79,7 +81,7 @@ object FormMain: TFormMain
     Margins.Right = 4
     Margins.Bottom = 4
     Align = alClient
-    ActiveCard = CardParseOptions
+    ActiveCard = CardConversionOptions
     BevelOuter = bvNone
     Padding.Left = 4
     Padding.Top = 4
@@ -775,8 +777,6 @@ object FormMain: TFormMain
       Caption = 'Parse Options'
       CardIndex = 2
       TabOrder = 1
-      ExplicitLeft = -28
-      ExplicitTop = 2
       object PanelWinSDKControls: TPanel
         Left = 0
         Top = 229
@@ -786,8 +786,6 @@ object FormMain: TFormMain
         BevelOuter = bvNone
         TabOrder = 0
         Visible = False
-        ExplicitLeft = 3
-        ExplicitTop = 206
         object LabelWinSDKVersion: TLabel
           Left = 4
           Top = 9
@@ -854,10 +852,6 @@ object FormMain: TFormMain
         Align = alClient
         BevelOuter = bvNone
         TabOrder = 2
-        ExplicitLeft = 77
-        ExplicitTop = -17
-        ExplicitWidth = 185
-        ExplicitHeight = 41
         object LabelCmdLineArgs: TLabel
           Left = 0
           Top = 0
@@ -869,8 +863,6 @@ object FormMain: TFormMain
           Margins.Bottom = 4
           Align = alTop
           Caption = 'Command line arguments to pass to Clang:'
-          ExplicitLeft = -20
-          ExplicitTop = 28
           ExplicitWidth = 205
         end
         object ListBoxCmdLineArgs: TListBox
@@ -886,10 +878,6 @@ object FormMain: TFormMain
           ItemHeight = 13
           TabOrder = 0
           OnClick = ListBoxCmdLineArgsClick
-          ExplicitLeft = 1
-          ExplicitTop = 72
-          ExplicitWidth = 426
-          ExplicitHeight = 43
         end
         object PanelCMDLineArgsControls: TPanel
           Left = 0
@@ -899,9 +887,6 @@ object FormMain: TFormMain
           Align = alBottom
           BevelOuter = bvNone
           TabOrder = 1
-          ExplicitLeft = 328
-          ExplicitTop = 64
-          ExplicitWidth = 185
           object ButtonAddCmdLineArg: TButton
             Left = 4
             Top = 8
@@ -1044,18 +1029,6 @@ object FormMain: TFormMain
         Margins.Right = 4
         Margins.Bottom = 4
         Caption = 'Convert "unsigned char" to:'
-      end
-      object LabelCustomTypes: TLabel
-        Left = 8
-        Top = 263
-        Width = 93
-        Height = 13
-        Margins.Left = 4
-        Margins.Top = 4
-        Margins.Right = 4
-        Margins.Bottom = 4
-        Caption = 'Custom types map:'
-        FocusControl = MemoCustomTypesMap
       end
       object ComboBoxConvertChar: TComboBox
         Left = 148
@@ -1208,7 +1181,7 @@ object FormMain: TFormMain
       end
       object CheckBoxDelayedLoading: TCheckBox
         Left = 6
-        Top = 217
+        Top = 223
         Width = 332
         Height = 17
         Margins.Left = 4
@@ -1220,8 +1193,8 @@ object FormMain: TFormMain
         OnClick = CheckBoxDelayedLoadingClick
       end
       object CheckBoxPrefixSymbolsWithUnderscore: TCheckBox
-        Left = 8
-        Top = 240
+        Left = 6
+        Top = 248
         Width = 330
         Height = 17
         Margins.Left = 4
@@ -1233,22 +1206,40 @@ object FormMain: TFormMain
         Visible = False
         OnClick = CheckBoxPrefixSymbolsWithUnderscoreClick
       end
-      object MemoCustomTypesMap: TMemo
-        Left = 2
-        Top = 282
-        Width = 407
-        Height = 0
-        Hint = 
-          'Input format: CTypeName=DelphiTypeName. Use CTRL + ENTER to inse' +
-          'rt new line.'
-        Margins.Left = 4
-        Margins.Top = 4
-        Margins.Right = 4
-        Margins.Bottom = 4
+      object GroupBoxCustomTypes: TGroupBox
+        Left = 3
+        Top = 272
+        Width = 419
+        Height = 11
         Anchors = [akLeft, akTop, akRight, akBottom]
+        Caption = 'Custom types map:'
         TabOrder = 10
-        WantReturns = False
-        WordWrap = False
+        ExplicitWidth = 461
+        ExplicitHeight = 92
+        object MemoCustomTypesMap: TMemo
+          AlignWithMargins = True
+          Left = 5
+          Top = 18
+          Width = 409
+          Height = 10
+          Hint = 
+            'Input format: CTypeName=DelphiTypeName. Use CTRL + ENTER to inse' +
+            'rt new line.'
+          Margins.Left = 4
+          Margins.Top = 4
+          Margins.Right = 4
+          Margins.Bottom = 4
+          Align = alClient
+          BevelOuter = bvRaised
+          BorderStyle = bsNone
+          TabOrder = 0
+          WantReturns = False
+          WordWrap = False
+          ExplicitLeft = 1
+          ExplicitTop = 14
+          ExplicitWidth = 423
+          ExplicitHeight = 146
+        end
       end
     end
     object CardIgnore: TCard
