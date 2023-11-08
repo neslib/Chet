@@ -904,7 +904,7 @@ begin
   FBuiltinTypes[TTypeKind.Char32] := 'UCS4Char';
   FBuiltinTypes[TTypeKind.UShort] := 'Word';
   FBuiltinTypes[TTypeKind.UInt] := 'Cardinal';
-  FBuiltinTypes[TTypeKind.ULong] := 'Cardinal';
+  FBuiltinTypes[TTypeKind.ULong] := 'Longword';
   FBuiltinTypes[TTypeKind.ULongLong] := 'UInt64';
 
   case FProject.CharConvert of
@@ -926,7 +926,7 @@ begin
   FBuiltinTypes[TTypeKind.WChar] := 'WideChar';
   FBuiltinTypes[TTypeKind.Short] := 'Smallint';
   FBuiltinTypes[TTypeKind.Int] := 'Integer';
-  FBuiltinTypes[TTypeKind.Long] := 'Integer';
+  FBuiltinTypes[TTypeKind.Long] := 'Longint';
   FBuiltinTypes[TTypeKind.LongLong] := 'Int64';
   FBuiltinTypes[TTypeKind.Float] := 'Single';
   FBuiltinTypes[TTypeKind.Double] := 'Double';
@@ -1779,10 +1779,15 @@ begin
           IsUnsigned := True;
         end;
 
-      TTypeKind.UInt,
-      TTypeKind.ULong:
+      TTypeKind.UInt:
         begin
           FWriter.WriteLn('Cardinal;');
+          IsUnsigned := True;
+        end;
+
+      TTypeKind.ULong:
+        begin
+          FWriter.WriteLn('Longword;');
           IsUnsigned := True;
         end;
 
@@ -1799,9 +1804,11 @@ begin
       TTypeKind.Short:
         FWriter.WriteLn('Smallint;');
 
-      TTypeKind.Int,
-      TTypeKind.Long:
+      TTypeKind.Int:
         FWriter.WriteLn('Integer;');
+
+      TTypeKind.Long:
+        FWriter.WriteLn('Longint;');
 
       TTypeKind.LongLong:
         FWriter.WriteLn('Int64;');
@@ -1982,8 +1989,10 @@ begin
 
   CheckIndirection(['short', 'short int'], 'Smallint');
   CheckIndirection(['unsigned short int'], 'Word');
-  CheckIndirection(['long', 'int', 'long int'], 'Integer');
-  CheckIndirection(['unsigned int', 'unsigned long int'], 'Cardinal');
+  CheckIndirection(['int'], 'Integer');
+  CheckIndirection(['long', 'long int'], 'Longint');
+  CheckIndirection(['unsigned int'], 'Cardinal');
+  CheckIndirection(['unsigned long', 'unsigned long int'], 'Longword');
   CheckIndirection(['long long int'], 'Int64');
   CheckIndirection(['unsigned long long int'], 'UInt64');
   CheckIndirection(['float'], 'Single');
