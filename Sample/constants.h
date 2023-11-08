@@ -8,3 +8,5 @@
 #define SHL_CONSTANT INT_CONSTANT<<2
 #define SHR_CONSTANT 5>>2
 #define COMPLEX_CONSTANT ((((INT_CONSTANT<<2)+INT_CONSTANT) | 0xFE) & 255)
+/// todo: a.t - this definition translates incorectly and needs postprocessing
+#define BUTTONS_OKA (LPSTR)1 

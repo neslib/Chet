@@ -8,6 +8,12 @@ uses
   System.IniFiles,
   System.TypInfo;
 
+const
+  { MS Windows SDK Root folder environment variable name}
+  cWindowsSDKRoot = 'WindowsSDK_Root';
+  { MS Windows SDK include folders environment variable name }
+  cWindowsSDK_IncludePaths = 'WindowsSDK_IncludePaths';
+
 {$SCOPEDENUMS ON}
 
 type
@@ -178,6 +184,7 @@ type
     FPlatforms: array [TPlatformType] of TPlatform;
 
     FIgnoreParseErrors: Boolean;
+    FShowParserWarnings: Boolean;
     FCmdLineArgs: TStringList;
 
     FCallConv: TCallConv;
@@ -202,6 +209,7 @@ type
     procedure SetHeaderFileDirectory(const Value: String);
     procedure SetIncludeSubdirectories(const Value: Boolean);
     procedure SetIgnoreParseErrors(const Value: Boolean);
+    procedure SetShowParserWarnings(const AValue: Boolean);
     function GetDelimitedCmdLineArgs: String;
     function GetCmdLineArgs: TArray<String>;
     procedure SetTargetPasFile(const Value: String);
@@ -273,6 +281,8 @@ type
         AIndex: index of the command line argument to delete. }
     procedure DeleteCmdLineArg(const AIndex: Integer);
 
+    function WinSDKIncludePaths: TArray<String>;
+
     { Name of the project file containing the configuration settings for this
       project. }
     property ProjectFilename: String read FProjectFilename;
@@ -323,6 +333,8 @@ type
 
     { Whether to ignore parse errors and try to convert header files anyway. }
     property IgnoreParseErrors: Boolean read FIgnoreParseErrors write SetIgnoreParseErrors;
+    { Whether parser warnings and diagnostic messages should be displayed (might be useful to look for possible conversion errors). }
+    property ShowParserWarnings: Boolean read FShowParserWarnings write SetShowParserWarnings;
 
     { The calling convention to use for translated function. }
     property CallConv: TCallConv read FCallConv write SetCallConv;
@@ -407,6 +419,7 @@ const // Ini Identifiers
   ID_USE_UNITS = 'UseUnits';
   ID_TARGET_PAS_FILE = 'TargetPasFile';
   ID_IGNORE_PARSE_ERRORS = 'IgnoreParseErrors';
+  ID_SHOW_PARSE_WARN = 'ShowParserWarnings';
   ID_CMD_LINE_ARGS = 'CmdLineArgs';
   ID_CALL_CONV = 'CallConv';
   ID_CHAR_CONVERT = 'CharConvert';
@@ -605,6 +618,7 @@ begin
       FPlatforms[P].Load(IniFile);
 
     FIgnoreParseErrors := IniFile.ReadBool(IS_PARSE_OPTIONS, ID_IGNORE_PARSE_ERRORS, False);
+    FShowParserWarnings := IniFile.ReadBool(IS_PARSE_OPTIONS, ID_SHOW_PARSE_WARN, False);
     FCmdLineArgs.DelimitedText := IniFile.ReadString(IS_PARSE_OPTIONS, ID_CMD_LINE_ARGS, '');
 
     FCallConv := IniFile.ReadEnum(IS_CONVERT_OPTIONS, ID_CALL_CONV, TCallConv.Cdecl);
@@ -649,6 +663,9 @@ begin
   FPlatforms[TPlatformType.iOS].LibraryName := 'lib' + AProjectName + '_ios.a';
   FPlatforms[TPlatformType.Android32].LibraryName := 'lib' + AProjectName + '_android32.a';
   FPlatforms[TPlatformType.Android64].LibraryName := 'lib' + AProjectName + '_android64.a';
+  // default target win32/msvc
+  FCmdLineArgs.Add('--target=i686-pc-win32');
+  FCmdLineArgs.Add('--target=i686-pc-windows-msvc');
 end;
 
 procedure TProject.Reset;
@@ -668,6 +685,7 @@ begin
     FPlatforms[P].Reset;
 
   FIgnoreParseErrors := False;
+  FShowParserWarnings := False;
   FCmdLineArgs.Clear;
 
   FCallConv := TCallConv.Cdecl;
@@ -706,6 +724,7 @@ begin
       FPlatforms[P].Save(IniFile);
 
     IniFile.WriteBool(IS_PARSE_OPTIONS, ID_IGNORE_PARSE_ERRORS, FIgnoreParseErrors);
+    IniFile.WriteBool(IS_PARSE_OPTIONS, ID_SHOW_PARSE_WARN, FShowParserWarnings);
     IniFile.WriteString(IS_PARSE_OPTIONS, ID_CMD_LINE_ARGS, FCmdLineArgs.DelimitedText);
 
     IniFile.WriteEnum(IS_CONVERT_OPTIONS, ID_CALL_CONV, FCallConv);
@@ -892,6 +911,15 @@ begin
   end;
 end;
 
+procedure TProject.SetShowParserWarnings(const AValue: Boolean);
+begin
+  if (AValue <> FShowParserWarnings) then
+  begin
+    FShowParserWarnings := AValue;
+    FModified := True;
+  end;
+end;
+
 procedure TProject.SetSymbolsToIgnore(const Value: TStrings);
 begin
   FSymbolsToIgnore.Assign(Value);
@@ -938,6 +966,11 @@ end;
 procedure TProject.SymbolsToIgnoreChange(Sender: TObject);
 begin
   FModified := True;
+end;
+
+function TProject.WinSDKIncludePaths: TArray<String>;
+begin
+  Result := GetEnvironmentVariable(cWindowsSDK_IncludePaths).Split([';'],'"','"',TStringSplitOptions.ExcludeEmpty);
 end;
 
 { TPlatform }

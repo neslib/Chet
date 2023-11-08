@@ -1,3 +1,4 @@
+#include <windows.h>
 /// Func without parameters or result
 void SimpleFunc();
 
@@ -21,3 +22,6 @@ int FuncVariableParams(int SomeParam, ...);
 
 /// Func with param of procedural type
 int FuncProcTypeParam(void (*fn)(float), void *Data);
+
+/// Func with param of procedural type
+int WINAPI FuncProcTypeParam2(void CALLBACK (*fn)(float), void *Data);

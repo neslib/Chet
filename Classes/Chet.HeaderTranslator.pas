@@ -319,7 +319,7 @@ begin
     FSymbolPrefix := '_';
   {$ENDIF}
   FCombinedHeaderFilename := TPath.Combine(TPath.GetTempPath, '_chet_.h');
-  FIndex := TIndex.Create(False, False);
+  FIndex := TIndex.Create(False, FProject.ShowParserWarnings);
   FTypes := TList<TCursor>.Create;
   FDeclaredTypes := TList<TCursor>.Create;
   FVisitedTypes := TDictionary<TCursor, Integer>.Create(
@@ -707,7 +707,7 @@ end;
 
 function THeaderTranslator.ParseCombinedHeaderFile: Boolean;
 var
-  Args: TArray<String>;
+  Args,WinSdkIncludePaths : TArray<String>;
   Options: TTranslationUnitFlags;
   DiagOpts: TDiagnosticDisplayOptions;
   Diag: IDiagnostic;
@@ -739,6 +739,9 @@ begin
   end;
 
   Args := Args + ['-I' + FProject.HeaderFileDirectory];
+  WinSdkIncludePaths := FProject.WinSDKIncludePaths;
+  for I := 0 to High(WinSdkIncludePaths) do
+    Args := Args + ['-I'+WinSdkIncludePaths[I]];
 
   FTranslationUnit := FIndex.ParseTranslationUnit(FCombinedHeaderFilename,
     Args, [], Options);
@@ -754,7 +757,10 @@ begin
     begin
       DoMessage(Diag.Format(DiagOpts));
       Inc(ErrorCount);
-    end;
+    end
+    else
+    if FProject.ShowParserWarnings and (Diag.Severity = TDiagnosticSeverity.Warning) then
+      DoMessage(Diag.Format(DiagOpts));
   end;
 
   if (ErrorCount = 0) then
@@ -771,12 +777,12 @@ end;
 
 function THeaderTranslator.RemoveQualifiers(const ACTypeName: String): String;
 var
-  HasPrefix: Boolean;
+  HasPrefix,StartsWithUnderscore: Boolean;
 begin
   Result := ACTypeName;
 
   {$IFDEF EXPERIMENTAL}
-  var StartsWithUnderscore := False;
+  StartsWithUnderscore := False;
   if (FProject.PrefixSymbolsWithUnderscore) then
   begin
     StartsWithUnderscore := Result.StartsWith('_');
@@ -1343,12 +1349,10 @@ var
   StringConcatPlusInserted : Boolean;
 begin
   StringConcatPlusInserted := False;
-
   for I := StartIndex to Count - 1 do
   begin
     S := Tokens[I];
     IsString := False;
-
     { Issue #4 (https://github.com/neslib/Chet/issues/4)
       Convert wide character string constant (L"...").
       These are the supported prefixes:
@@ -2124,6 +2128,9 @@ var
   ResType, ProtoType: TType;
   ArgIndex, ArgCount: Integer;
   HasResult: Boolean;
+{$IFnDEF OldHandleCallConv}
+  CallConv: string;
+{$ENDIF}
 begin
   { AType is the function proto type (of kind FunctionProto or FunctionNoProto).
     Use its ResultType and ArgTypes properties for parameter type information.
@@ -2213,15 +2220,41 @@ begin
   else
     FWriter.Write(')');
 
+{$IFnDEF OldHandleCallConv}
+  CallConv := ';';
+  // https://clang.llvm.org/docs/AttributeReference.html#calling-conventions
+  // this needs explicitly specify the target platform by specifying the command line options
+  // --target=i686-pc-win32 --target=i686-pc-windows-msvc
+  case AType.FunctionCallingConv of
+
+    TCallingConv.C: CallConv := CallConv + ' cdecl';
+    TCallingConv.X86StdCall,
+    TCallingConv.Win64{X86_64Win64}: CallConv := CallConv + ' stdcall';
+    TCallingConv.X86FastCall: CallConv := CallConv + ' fastcall';
+    TCallingConv.X86Pascal: CallConv := CallConv + ' pascal';
+    TCallingConv.X86RegCall: CallConv := CallConv + ' register';
+  else
+    begin
+      if FProject.CallConv = TCallConv.StdCall then
+        CallConv := CallConv + ' stdcall'
+      else
+        CallConv := CallConv + ' cdecl';
+      if AType.FunctionCallingConv <> TCallingConv.Default then
+        CallConv := CallConv + ' { TODO -cFIXME: Calling conversion may be wrong! }';
+    end;
+  end;
   if (AType.Kind = TTypeKind.FunctionProto) and (AType.IsFunctionVariadic) then
-    FWriter.Write(' varargs');
+    CallConv := CallConv + ' varargs';
 
-  FWriter.Write(';');
-
-  if (FProject.CallConv = TCallConv.StdCall) then
+  FWriter.Write(CallConv);
+{$ELSE}
+  if FProject.CallConv = TCallConv.StdCall then
     FWriter.Write(' stdcall')
   else
     FWriter.Write(' cdecl');
+  if (AType.Kind = TTypeKind.FunctionProto) and (AType.IsFunctionVariadic) then
+    FWriter.Write(' varargs');
+{$ENDIF}
 end;
 
 procedure THeaderTranslator.WriteFunctions;
