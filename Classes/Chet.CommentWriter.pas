@@ -4,7 +4,7 @@ interface
 
 uses
   System.Classes,
-  System.SysUtils,
+  System.SysUtils,System.StrUtils,
   {$IFDEF DEBUG}
   System.Generics.Collections,
   {$ENDIF}
@@ -439,6 +439,11 @@ procedure TParsedCommentWriter.WriteNode(const AComment, APrevSibling: TComment;
     end;
   end;
 
+  function SkipTag(const ATagName: string): Boolean;
+  begin
+    Result := IndexText(ATagName,['li','ul','table']) > -1;
+  end;
+
 var
   Kind: TCommentKind;
   S, Args: String;
@@ -469,10 +474,34 @@ begin
       end;
 
     TCommentKind.HtmlStartTag:
-      Assert(False);
+    begin
+      S := AComment.HtmlTagName;
+      {$IFDEF DEBUG}
+      OutputDebugString(PChar(S));
+      {$ENDIF}
+      if not SkipTag(S) then begin
+        if not AComment.HtmlTagIsSelfClosing then
+          Append(Format('<%s>',[S]))
+        else
+          Append(Format('<%s ',[S]))
+      end;
+      // do nothing;
+    end;
 
     TCommentKind.HtmlEndTag:
-      Assert(False);
+    begin
+      S := AComment.HtmlTagName;
+      {$IFDEF DEBUG}
+      OutputDebugString(PChar(S));
+      {$ENDIF}
+      if not SkipTag(S) then begin
+        if not AComment.HtmlTagIsSelfClosing then
+          Append(Format('</%s> ',[AComment.HtmlTagName]))
+        else
+          Append('/> ');
+      end;
+      // do nothing;
+    end;
 
     TCommentKind.Paragraph,
     TCommentKind.VerbatimLine:
@@ -602,8 +631,12 @@ begin
         AppendLine;
       end;
   else
-    S := AComment.Text.Replace('//', '', []);
-    Append(S);
+    S := AComment.Text.Replace('//', '', []).Replace('* ','',[rfReplaceAll]);
+    if S = '*' then
+      AppendLine
+    else
+      Append(S);
+
     if (AComment.HasTrailingNewline) then
       AppendLine;
   end;
