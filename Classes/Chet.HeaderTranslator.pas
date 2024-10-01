@@ -152,6 +152,9 @@ type
     constructor Create(const AProject: TProject);
     destructor Destroy; override;
 
+    function GetExpandedHeaderFileDirectory: String;
+    function GetExpandedTargetPasFile: String;
+
     { Runs the header translator. }
     procedure Run;
 
@@ -352,6 +355,26 @@ begin
   SetupSymbolsToIgnore;
 end;
 
+function THeaderTranslator.GetExpandedHeaderFileDirectory: String;
+begin
+  if TPath.IsRelativePath(FProject.HeaderFileDirectory) then
+    Result := TPath.Combine(TPath.GetDirectoryName(FProject.ProjectFilename), FProject.HeaderFileDirectory)
+  else
+    Result := FProject.HeaderFileDirectory;
+
+  Result := ExpandUNCFileName(IncludeTrailingPathDelimiter(Result));
+end;
+
+function THeaderTranslator.GetExpandedTargetPasFile: String;
+begin
+  if TPath.IsRelativePath(FProject.TargetPasFile) then
+    Result := TPath.Combine(TPath.GetDirectoryName(FProject.ProjectFilename), FProject.TargetPasFile)
+  else
+    Result := FProject.TargetPasFile;
+
+  Result := ExpandUNCFileName(Result);
+end;
+
 procedure THeaderTranslator.CreateCombinedHeaderFile;
 var
   Option: TSearchOption;
@@ -365,7 +388,7 @@ begin
   else
     Option := TSearchOption.soTopDirectoryOnly;
 
-  HeaderPath := IncludeTrailingPathDelimiter(FProject.HeaderFileDirectory);
+  HeaderPath := GetExpandedHeaderFileDirectory;
   IgnoredFiles := FProject.IgnoredFiles.Split([','], '"', '"', TStringSplitOptions.ExcludeEmpty);
 
   if (Length(IgnoredFiles) = 0) then
@@ -386,7 +409,7 @@ begin
       end);
 
   if (Length(HeaderFiles) = 0) then
-    raise EHeaderTranslatorError.CreateFmt('No C header files found in directory "%s".', [FProject.HeaderFileDirectory]);
+    raise EHeaderTranslatorError.CreateFmt('No C header files found in directory "%s".', [GetExpandedHeaderFileDirectory]);
 
   Writer := TStreamWriter.Create(FCombinedHeaderFilename);
   try
@@ -738,7 +761,7 @@ begin
       Args := Args + ['-fparse-all-comments'];
   end;
 
-  Args := Args + ['-I' + FProject.HeaderFileDirectory];
+  Args := Args + ['-I' + GetExpandedHeaderFileDirectory];
 
   FTranslationUnit := FIndex.ParseTranslationUnit(FCombinedHeaderFilename,
     Args, [], Options);
@@ -846,7 +869,7 @@ begin
     AnalyzeTypes;
 
     FCommentWriter := nil;
-    FWriter := TSourceWriter.Create(FProject.TargetPasFile);
+    FWriter := TSourceWriter.Create(GetExpandedTargetPasFile);
     try
       CreateCommentWriter;
       FWriter.WriteLn('unit %s;', [TPath.GetFileNameWithoutExtension(FProject.TargetPasFile)]);

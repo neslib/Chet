@@ -304,58 +304,59 @@ var
   P: TPlatform;
   PlatformCount: Integer;
 begin
-  if (FProject.HeaderFileDirectory <> '') and (not TDirectory.Exists(FProject.HeaderFileDirectory)) then
-  begin
-    ConfigError('Header file directory does not exist', EditHeaderFileDirectory);
-    Exit;
-  end;
-
-  if (FProject.TargetPasFile = '') then
-  begin
-    ConfigError('Target Pascal file not provided', EditPasFile);
-    Exit;
-  end;
-
-  Directory := TPath.GetDirectoryName(FProject.TargetPasFile);
-  if (Directory <> '') and (not TDirectory.Exists(Directory)) then
-  begin
-    ConfigError('Directory for target Pascal file does not exist', EditPasFile);
-    Exit;
-  end;
-
-  if (FProject.LibraryConstant = '') then
-  begin
-    ConfigError('Library constant not specified', EditLibConstant);
-    Exit;
-  end;
-
-  PlatformCount := 0;
-  for PT := Low(TPlatformType) to High(TPlatformType) do
-  begin
-    P := FProject.Platforms[PT];
-    if (P.Enabled) then
-    begin
-      if (P.LibraryName = '') then
-      begin
-        ConfigError('Library name for platform not specified', FPlatformLibraryName[PT]);
-        Exit;
-      end;
-      Inc(PlatformCount);
-    end;
-  end;
-
-  if (PlatformCount = 0) then
-  begin
-    ConfigError('At least 1 platform must be enabled', CheckBoxWin32);
-    Exit;
-  end;
-
-  CardPanel.ActiveCard := CardTranslate;
-  ButtonGroupCategories.ItemIndex := CardTranslate.CardIndex;
-  MemoMessages.Clear;
-  Application.ProcessMessages; // Ugh
   Translator := THeaderTranslator.Create(FProject);
   try
+    if not TDirectory.Exists(Translator.GetExpandedHeaderFileDirectory) then
+    begin
+      ConfigError('Header file directory does not exist', EditHeaderFileDirectory);
+      Exit;
+    end;
+
+    if (FProject.TargetPasFile = '') then
+    begin
+      ConfigError('Target Pascal file not provided', EditPasFile);
+      Exit;
+    end;
+
+    Directory := TPath.GetDirectoryName(Translator.GetExpandedTargetPasFile);
+    if not TDirectory.Exists(Directory) then
+    begin
+      ConfigError('Directory for target Pascal file does not exist', EditPasFile);
+      Exit;
+    end;
+
+    if (FProject.LibraryConstant = '') then
+    begin
+      ConfigError('Library constant not specified', EditLibConstant);
+      Exit;
+    end;
+
+    PlatformCount := 0;
+    for PT := Low(TPlatformType) to High(TPlatformType) do
+    begin
+      P := FProject.Platforms[PT];
+      if (P.Enabled) then
+      begin
+        if (P.LibraryName = '') then
+        begin
+          ConfigError('Library name for platform not specified', FPlatformLibraryName[PT]);
+          Exit;
+        end;
+        Inc(PlatformCount);
+      end;
+    end;
+
+    if (PlatformCount = 0) then
+    begin
+      ConfigError('At least 1 platform must be enabled', CheckBoxWin32);
+      Exit;
+    end;
+
+    CardPanel.ActiveCard := CardTranslate;
+    ButtonGroupCategories.ItemIndex := CardTranslate.CardIndex;
+    MemoMessages.Clear;
+    Application.ProcessMessages; // Ugh
+
     Translator.OnMessage := HandleTranslatorMessage;
     Translator.Run;
     TFilePostProcessor.Execute(FProject, ScriptMemo.Lines);
