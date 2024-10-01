@@ -60,7 +60,8 @@ interface
 uses
   System.Types,
   System.SysUtils,
-  System.Classes;
+  System.Classes,
+  System.Rtti;
 
 type
 
@@ -301,6 +302,19 @@ end;
 
 
 function TScriptStringList.RegEx(const aPattern: string; const aValue: string; const aOperation: string): Boolean;
+
+  function FormatMatchGroups(const aMatch: TMatch): String;
+  var
+    LIndex: Integer;
+    LValues: TArray<TValue>;
+  begin
+    SetLength(LValues, aMatch.Groups.Count);
+    for LIndex := 0 to aMatch.Groups.Count-1 do
+      LValues[LIndex] := aMatch.Groups[LIndex].Value;
+
+    Result := Format(aValue, TValueArrayToArrayOfConst(LValues));
+  end;
+
 var
   LMatch: TMatch;
   LValue: string;
@@ -318,6 +332,9 @@ begin
   if SameText(aOperation, 'Append') then
     LOperation := 2
   else
+  if SameText(aOperation, 'Format') then
+    LOperation := 3
+  else
     begin
       Result := False;
       Exit;
@@ -331,6 +348,7 @@ begin
       0: LValue := aValue;
       1: LValue := aValue + LMatch.Value;
       2 : LValue := LMatch.Value + aValue;
+      3 : LValue := FormatMatchGroups(lMatch);
     end;
     try
       Self[LIndex] := TRegEx.Replace(Self[LIndex], aPattern, LValue);
