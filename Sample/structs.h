@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 typedef struct {
     unsigned int   langid                 :16; // Primary and sublanguage associated with script
     unsigned int   fNumeric               :1;
@@ -96,6 +98,7 @@ typedef struct Struct10 {
 /// Typedef struct without name
 typedef struct {
     int value;
+	bool b;
 } Struct11;
 
 /// Bit-backed struct

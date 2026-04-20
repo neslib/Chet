@@ -111,7 +111,8 @@ type
     procedure WriteStructType(const ACursor: TCursor; const AIsUnion: Boolean);
     procedure WriteEnumType(const ACursor: TCursor);
     procedure WriteEnumTypeEnum(const ACursor: TCursor);
-    procedure WriteEnumTypeConst(const ACursor: TCursor);
+    procedure WriteEnumTypeConst(const ACursor: TCursor;
+      const ANeedTypeSection: Boolean);
     procedure WriteTypedefType(const ACursor: TCursor);
     procedure WriteProceduralType(const ACursor: TCursor; const AType: TType;
       const ANamePrefix: String = '');
@@ -550,7 +551,7 @@ begin
     { Incomplete arrays are defined like:
         int foo[];
       Convert these to a pointer type. }
-    Exit('P' + GetDelphiTypeName(AType.ArrayElementType));
+    Exit(MakePointerType(GetDelphiTypeName(AType.ArrayElementType)));
 
   StarCount := 0;
   while (Kind = TTypeKind.Pointer) do
@@ -570,14 +571,16 @@ begin
     if (Result <> '') then
     begin
       if (StarCount > 0) then
-        Result := String.Create('P', StarCount) + Result;
+        Result := MakePointerType(Result, StarCount);
       if Assigned(AOutIsBuiltin) then
         AOutIsBuiltin^ := True;
       Exit;
     end;
   end;
 
-  Result := RemoveQualifiers(Spelling(AType));
+  Result := RemoveQualifiers(AType.Spelling);
+  if (Result <> '') and (not FTypeMap.ContainsKey(Result)) then
+    Result := FSymbolPrefix + Result;
   if IsAnonymous(Result) then
   begin
     Result := GenerateAnonymousTypeName(Result);
@@ -1738,18 +1741,23 @@ begin
 end;
 
 procedure THeaderTranslator.WriteEnumType(const ACursor: TCursor);
+var
+  NeedTypeSection: Boolean;
 begin
   if (not FWriter.IsAtSectionStart) then
     FWriter.WriteLn;
 
+  NeedTypeSection := (FWriter.Section <> 'type');
   FCommentWriter.WriteComment(ACursor);
+
   if (FProject.EnumHandling = TEnumHandling.ConvertToEnum) then
     WriteEnumTypeEnum(ACursor)
   else
-    WriteEnumTypeConst(ACursor);
+    WriteEnumTypeConst(ACursor, NeedTypeSection);
 end;
 
-procedure THeaderTranslator.WriteEnumTypeConst(const ACursor: TCursor);
+procedure THeaderTranslator.WriteEnumTypeConst(const ACursor: TCursor;
+  const ANeedTypeSection: Boolean);
 var
   T: TType;
   TypeName: String;
@@ -1760,7 +1768,9 @@ begin
 
   if (not IsAnonymous) then
   begin
-    FWriter.StartSection('type');
+    if (ANeedTypeSection) then
+      FWriter.StartSection('type');
+
     FWriter.Write('%s = ', [TypeName]);
 
     T := ACursor.EnumDeclIntegerType;
@@ -1816,7 +1826,11 @@ begin
       FWriter.WriteLn('Integer;');
     end;
     FWriter.WriteLn('%s = ^%s;', [MakePointerType(TypeName), TypeName]);
-    FWriter.EndSection;
+
+    if (ANeedTypeSection) then
+      FWriter.EndSection
+    else
+      FWriter.WriteLn;
   end;
 
   FWriter.StartSection('const');
@@ -2024,7 +2038,8 @@ begin
   for Cursor in FTypes do
   begin
     case Cursor.Kind of
-      TCursorKind.StructDecl:
+      TCursorKind.StructDecl,
+      TCursorKind.UnionDecl:
         begin
           S := Spelling(Cursor);
           if (S = '') then
@@ -2261,10 +2276,7 @@ begin
         FWriter.WriteLn('%s = ^%s;', [MakePointerType(ATypeName), ValidIdentifier(ATypeName)]);
 
       for I := 1 to IndirectionCount - 1 do
-      begin
-        ATypeName := 'P' + ATypeName;
-        FWriter.WriteLn('P%s = ^%0:s;', [ATypeName]);
-      end;
+        FWriter.WriteLn('%s = ^%s;', [MakePointerType(ATypeName, I + 1), MakePointerType(ATypeName, I)]);
     end;
   end;
 end;
@@ -2367,7 +2379,8 @@ begin
     { Anonymous types aren't analyzed during the AnalyzeTypes phase, which means
       that there will not be forward declarations of pointer-to-struct types.
       So we do that here. }
-    FWriter.WriteLn('P%s = ^%0:s;', [StructName]);
+//    FWriter.WriteLn('P%s = ^%0:s;', [StructName]);
+    FWriter.WriteLn('%s = ^%s;', [MakePointerType(StructName), StructName]);
 
   FWriter.WriteLn('%s = record', [StructName]);
   FWriter.Indent;
@@ -2629,8 +2642,8 @@ begin
     These only make sense when user later as a pointer reference (*Foo) }
   if (T.Kind = TTypeKind.Void) then
   begin
-    FWriter.WriteLn('P%s = Pointer;', [DstName]);
-    FWriter.WriteLn('PP%s = ^P%0:s;', [DstName]);
+    FWriter.WriteLn('%s = Pointer;', [MakePointerType(DstName)]);
+    FWriter.WriteLn('%s = ^%s;', [MakePointerType(DstName, 2), MakePointerType(DstName)]);
     Exit;
   end;
 

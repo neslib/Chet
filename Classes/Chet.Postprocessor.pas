@@ -57,7 +57,8 @@ begin
       if (not ProjDir.IsEmpty) then
       begin
         ProjDir := TPath.GetDirectoryName(ProjDir);
-        TDirectory.SetCurrentDirectory(ProjDir);
+        if (ProjDir <> '') then
+          TDirectory.SetCurrentDirectory(ProjDir);
         CleanHeader.Process(AProject.TargetPasFile, AScript);
       end;
     finally

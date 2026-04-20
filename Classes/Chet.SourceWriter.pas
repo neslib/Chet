@@ -66,6 +66,9 @@ type
     { Whether the writer is currently at the start of a section. }
     function IsAtSectionStart: Boolean;
 
+    { The section the write is currently in. }
+    property Section: String read FSection;
+
     { The current indentation level. }
     property CurrentIndent: String read FIndent;
   end;
