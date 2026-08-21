@@ -71,6 +71,11 @@ type
     FBuiltinTypes: array [Low(TTypeKind)..TTypeKind.LongDouble] of String;
     FOnMessage: TMessageEvent;
     FImplementation: TStrings;
+    {$IFDEF EXPERIMENTAL}
+    FInInternalApis: Boolean;
+    FHasInternalApis: Boolean;
+    FInImplementation: Boolean;
+    {$ENDIF}
   private
     procedure SetupBuiltinTypes;
     procedure SetupReservedWords;
@@ -115,9 +120,10 @@ type
       const ANeedTypeSection: Boolean);
     procedure WriteTypedefType(const ACursor: TCursor);
     procedure WriteProceduralType(const ACursor: TCursor; const AType: TType;
-      const ANamePrefix: String = '');
-    procedure WriteFunctionProto(const ACursor: TCursor; const AType: TType;
-      const AFunctionName: String; const AInStruct: Boolean = False);
+      const AIsPointer: Boolean = False);
+    function WriteFunctionProto(const ACursor: TCursor; const AType: TType;
+      const AFunctionName: String; const AInStruct: Boolean = False;
+      const AHandle8ByteReturnStruct: Boolean = False): Boolean;
     procedure WriteDefinedConstant(const ACursor: TCursor);
     procedure WriteTypedConstant(const ACursor: TCursor);
     procedure WriteFunction(const ACursor: TCursor);
@@ -141,6 +147,9 @@ type
     class function IsProceduralType(const AType: TType;
       out APointee: TType): Boolean; static;
     class function GetIndirectionCount(var AType: TType): Integer; static;
+    {$IFDEF EXPERIMENTAL}
+    class function Is8ByteStruct(const AType: TType): Boolean; static;
+    {$ENDIF}
     class function Is8or16ByteStruct(const AType: TType): Boolean; static;
     class function IsAnonymous(const AName: String): Boolean; static;
     class function ConvertEscapeSequences(const ASource: String): String; static;
@@ -630,6 +639,40 @@ begin
   AType := T;
 end;
 
+{$IFDEF EXPERIMENTAL}
+class function THeaderTranslator.Is8ByteStruct(const AType: TType): Boolean;
+var
+  FieldCount: Integer;
+  IsPointerField: Boolean;
+begin
+  if (AType.SizeOf <> 8) or (AType.CanonicalType.Kind <> TTypeKind.Rec) then
+    Exit(False);
+
+  { Since Chet is a 64-bit app and uses the 64-bit Clang compiler, a record with
+    a single Pointer field will be 8 bytes in size here. But on 32-bit systems
+    it will be 4 bytes in size. We only care about records with non-pointer
+    fields so we need to filter these out. }
+  FieldCount := 0;
+  IsPointerField := False;
+  AType.CanonicalType.VisitFields(
+    function(const ACursor: TCursor): TVisitorResult
+    var
+      FieldType: TType;
+    begin
+      if (FieldCount = 0) then
+      begin
+        FieldType := ACursor.CursorType;
+        if (FieldType.Kind = TTypeKind.Pointer) then
+          IsPointerField := True;
+      end;
+      Inc(FieldCount);
+      Result := TVisitorResult.Continue;
+    end);
+
+  Result := (FieldCount > 1) or (not IsPointerField);
+end;
+{$ENDIF}
+
 class function THeaderTranslator.Is8or16ByteStruct(const AType: TType): Boolean;
 begin
   if (AType.SizeOf <> 8) and (AType.SizeOf <> 16) then
@@ -868,6 +911,14 @@ begin
       WriteTypes;
       WriteConstants2;
       WriteFunctions;
+
+      {$IFDEF EXPERIMENTAL}
+      FInInternalApis := True;
+      FTranslationUnit.Cursor.VisitChildren(VisitFunctions);
+      if (FHasInternalApis) then
+        FWriter.WriteLn;
+      {$ENDIF}
+
       FWriter.WriteLn('implementation');
       WriteImplementation;
       FWriter.WriteLn;
@@ -2080,66 +2131,135 @@ procedure THeaderTranslator.WriteFunction(const ACursor: TCursor);
 var
   FuncCursor: TCursor;
   Name: String;
+  {$IFDEF EXPERIMENTAL}
+  Returns8ByteStruct: Boolean;
+  ArgIndex: Integer;
+  {$ENDIF}
 begin
   Name := Spelling(ACursor);
   if (FSymbolsToIgnore.ContainsKey(Name)) then
     Exit;
 
-  FWriter.WriteLn;
-
-  { Check if any of the function parameters is a procedural type. Delphi
-    doesn't support inline procedural types, so we need to create declarations
-    for those. }
-  FuncCursor := ACursor;
-  ACursor.VisitChildren(
-    function(const ACursor, AParent: TCursor): TChildVisitResult
-    var
-      CursorType, PointeeType: TType;
-    begin
-      if (ACursor.Kind = TCursorKind.ParmDecl) then
-      begin
-        CursorType := ACursor.CursorType;
-        if IsProceduralType(CursorType, PointeeType) then
-        begin
-          FWriter.StartSection('type');
-          { Make up name for this parameter type }
-          FWriter.Write(GenerateProcTypeNameForArg(FuncCursor, ACursor));
-          FWriter.Write(' = ');
-          WriteFunctionProto(ACursor, PointeeType, '');
-          FWriter.WriteLn(';');
-          FWriter.EndSection;
-          FWriter.WriteLn;
-        end;
-      end;
-
-      Result := TChildVisitResult.Continue;
-    end);
-
-  FCommentWriter.WriteComment(ACursor);
-  WriteFunctionProto(ACursor, ACursor.CursorType, ValidIdentifier(Name));
   {$IFDEF EXPERIMENTAL}
+  if (not FInInternalApis) then
+  {$ENDIF}
+  begin
+    FWriter.WriteLn;
+
+    { Check if any of the function parameters is a procedural type. Delphi
+      doesn't support inline procedural types, so we need to create declarations
+      for those. }
+    FuncCursor := ACursor;
+    ACursor.VisitChildren(
+      function(const ACursor, AParent: TCursor): TChildVisitResult
+      var
+        CursorType, PointeeType: TType;
+      begin
+        if (ACursor.Kind = TCursorKind.ParmDecl) then
+        begin
+          CursorType := ACursor.CursorType;
+          if IsProceduralType(CursorType, PointeeType) then
+          begin
+            FWriter.StartSection('type');
+            { Make up name for this parameter type }
+            FWriter.Write(GenerateProcTypeNameForArg(FuncCursor, ACursor));
+            FWriter.Write(' = ');
+            WriteFunctionProto(ACursor, PointeeType, '');
+            FWriter.WriteLn(';');
+            FWriter.EndSection;
+            FWriter.WriteLn;
+          end;
+        end;
+
+        Result := TChildVisitResult.Continue;
+      end);
+
+    FCommentWriter.WriteComment(ACursor);
+  end;
+
+  {$IFDEF EXPERIMENTAL}
+  Returns8ByteStruct := WriteFunctionProto(ACursor, ACursor.CursorType,
+    ValidIdentifier(Name));
+  if (not Returns8ByteStruct) and (FInInternalApis) then
+    Exit;
+
   if (FProject.PrefixSymbolsWithUnderscore) then
     Name := Name.Substring(1);
+
+  if (not Returns8ByteStruct) or ((FInInternalApis) and not (FInImplementation)) then
+  {$ELSE}
+  WriteFunctionProto(ACursor, ACursor.CursorType, ValidIdentifier(Name));
   {$ENDIF}
-  FWriter.WriteLn(';');
-  FWriter.Write('  external %s%s name _PU + ''%s''',
-    [FSymbolPrefix, FProject.LibraryConstant, Name]);
 
-  if (FProject.DelayedLoading) then
-    FWriter.Write(' {$IFDEF MSWINDOWS}delayed{$ENDIF}');
+  begin
+    FWriter.WriteLn(';');
+    FWriter.Write('  external %s%s name _PU + ''%s''',
+      [FSymbolPrefix, FProject.LibraryConstant, Name]);
+
+    if (FProject.DelayedLoading) then
+      FWriter.Write(' {$IFDEF MSWINDOWS}delayed{$ENDIF}');
+  end;
 
   FWriter.WriteLn(';');
+
+  {$IFDEF EXPERIMENTAL}
+  if (FInImplementation) then
+  begin
+    FWriter.WriteLn('begin');
+
+    if (FProject.Platforms[TPlatformType.Android32].Enabled) then
+      FWriter.Write('  {$IFDEF ANDROID32}Result{$ELSE}UInt64(Result){$ENDIF}')
+    else
+      FWriter.Write('  UInt64(Result)');
+
+    FWriter.Write(' := ');
+
+    if (FProject.PrefixSymbolsWithUnderscore) then
+      FWriter.Write('_');
+
+    FWriter.Write('___');
+    FWriter.Write(ValidIdentifier(Name));
+    FWriter.Write('(');
+
+    ArgIndex := 0;
+    ACursor.VisitChildren(
+      function(const ACursor, AParent: TCursor): TChildVisitResult
+      var
+        ArgName: String;
+      begin
+        if (ACursor.Kind = TCursorKind.ParmDecl) then
+        begin
+          ArgName := ValidIdentifier(ACursor.Spelling);
+          if (ArgName = '') then
+            ArgName := 'p' + (ArgIndex + 1).ToString;
+
+          if (ArgIndex > 0) then
+            FWriter.Write(', ');
+          FWriter.Write(ArgName);
+
+          Inc(ArgIndex);
+        end;
+
+        Result := TChildVisitResult.Continue;
+      end);
+
+    FWriter.WriteLn(');');
+    FWriter.WriteLn('end;');
+  end;
+  {$ENDIF}
 end;
 
-procedure THeaderTranslator.WriteFunctionProto(const ACursor: TCursor;
+function THeaderTranslator.WriteFunctionProto(const ACursor: TCursor;
   const AType: TType; const AFunctionName: String;
-  const AInStruct: Boolean);
+  const AInStruct, AHandle8ByteReturnStruct: Boolean): Boolean;
 var
   ProtoCursor: TCursor;
   ResType, ProtoType: TType;
   ArgIndex, ArgCount: Integer;
   HasResult: Boolean;
 begin
+  Result := False;
+
   { AType is the function proto type (of kind FunctionProto or FunctionNoProto).
     Use its ResultType and ArgTypes properties for parameter type information.
     However, these do not provide info about the names of the parameters. Those
@@ -2147,6 +2267,22 @@ begin
     they are still children of ACursor, but Spelling will be empty.  }
   ResType := AType.ResultType;
   HasResult := (not (ResType.Kind in [TTypeKind.Invalid, TTypeKind.Void]));
+
+  {$IFDEF EXPERIMENTAL}
+  if (HasResult) then
+  begin
+    Result := (FProject.Convert8ByteReturnStructsToUInt64)
+      and (Is8ByteStruct(ResType));
+    if (not Result) and (FInInternalApis) then
+      Exit;
+  end
+  else if (FInInternalApis) then
+    Exit;
+
+  if (FInInternalApis) then
+    FWriter.WriteLn;
+  {$ENDIF}
+
   if (HasResult) then
     FWriter.Write('function')
   else
@@ -2156,6 +2292,12 @@ begin
   if (AFunctionName <> '') then
   begin
     FWriter.Write(' ');
+
+    {$IFDEF EXPERIMENTAL}
+    if (FInInternalApis) and (not FInImplementation) then
+      FWriter.Write('___');
+    {$ENDIF}
+
     FWriter.Write(AFunctionName);
   end;
 
@@ -2223,6 +2365,30 @@ begin
   if (HasResult) then
   begin
     FWriter.Write('): ');
+    {$IFDEF EXPERIMENTAL}
+    if (Result) then
+    begin
+      if (AHandle8ByteReturnStruct or FInInternalApis) and (not FInImplementation) then
+      begin
+        if (FProject.Platforms[TPlatformType.Android32].Enabled) then
+          FWriter.Write('{$IFDEF ANDROID32}%s{$ELSE}UInt64{$ENDIF}', [GetDelphiTypeName(ResType)])
+        else
+          FWriter.Write('UInt64{%s}', [GetDelphiTypeName(ResType)]);
+
+        FHasInternalApis := True;
+        if (not FInInternalApis) then
+          Result := False; // Handled
+      end
+      else
+      begin
+        { A regular API function. Create an inline Delphi-friendly function
+          and take care of the implementation details in the implementation
+          section. }
+        FWriter.Write(GetDelphiTypeName(ResType));
+      end;
+    end
+    else
+    {$ENDIF}
     FWriter.Write(GetDelphiTypeName(ResType));
   end
   else
@@ -2233,6 +2399,11 @@ begin
 
   FWriter.Write(';');
 
+  {$IFDEF EXPERIMENTAL}
+  if (Result) and ((not FInInternalApis) or (FInImplementation)) then
+    FWriter.Write(' inline')
+  else
+  {$ENDIF}
   if (FProject.CallConv = TCallConv.StdCall) then
     FWriter.Write(' stdcall')
   else
@@ -2250,6 +2421,14 @@ procedure THeaderTranslator.WriteImplementation;
 var
   Line: String;
 begin
+  {$IFDEF EXPERIMENTAL}
+  if (FHasInternalApis) then
+  begin
+    FInImplementation := True;
+    FTranslationUnit.Cursor.VisitChildren(VisitFunctions);
+  end;
+  {$ENDIF}
+
   if (FImplementation <> nil) and (FImplementation.Count > 0) then
   begin
     DoMessage('Writing implementation...');
@@ -2348,12 +2527,18 @@ begin
 end;
 
 procedure THeaderTranslator.WriteProceduralType(const ACursor: TCursor;
-  const AType: TType; const ANamePrefix: String);
+  const AType: TType; const AIsPointer: Boolean);
+var
+  TypeName: String;
 begin
   FWriter.WriteLn;
   FCommentWriter.WriteComment(ACursor);
-  FWriter.Write('%s%s = ', [ANamePrefix, ValidIdentifier(Spelling(ACursor))]);
-  WriteFunctionProto(ACursor, AType, '');
+
+  TypeName := ValidIdentifier(Spelling(ACursor));
+  if (AIsPointer) then
+    TypeName := MakePointerType(TypeName);
+  FWriter.Write('%s = ', [TypeName]);
+  WriteFunctionProto(ACursor, AType, '', False, True);
   FWriter.WriteLn(';');
 end;
 
@@ -2588,13 +2773,13 @@ begin
     T := T.CanonicalType;
     if (T.Kind in [TTypeKind.FunctionNoProto, TTypeKind.FunctionProto]) then
     begin
-      WriteProceduralType(ACursor, T, 'P');
+      WriteProceduralType(ACursor, T, True);
       Exit;
     end;
   end
   else if (T.Kind in [TTypeKind.FunctionNoProto, TTypeKind.FunctionProto]) then
   begin
-    WriteProceduralType(ACursor, T, 'P');
+    WriteProceduralType(ACursor, T, True);
     Exit;
   end;
 

@@ -81,7 +81,7 @@ object FormMain: TFormMain
     Margins.Right = 7
     Margins.Bottom = 7
     Align = alClient
-    ActiveCard = PostProcess
+    ActiveCard = CardConversionOptions
     BevelOuter = bvNone
     Padding.Left = 8
     Padding.Top = 8
@@ -956,8 +956,8 @@ object FormMain: TFormMain
         Caption = 'Convert "unsigned char" to:'
       end
       object LabelCustomTypes: TLabel
-        Left = 15
-        Top = 525
+        Left = 12
+        Top = 572
         Width = 188
         Height = 27
         Margins.Left = 7
@@ -1130,7 +1130,7 @@ object FormMain: TFormMain
         OnClick = CheckBoxDelayedLoadingClick
       end
       object CheckBoxPrefixSymbolsWithUnderscore: TCheckBox
-        Left = 15
+        Left = 12
         Top = 479
         Width = 661
         Height = 34
@@ -1145,9 +1145,9 @@ object FormMain: TFormMain
       end
       object MemoCustomTypesMap: TMemo
         Left = 4
-        Top = 563
+        Top = 613
         Width = 1008
-        Height = 268
+        Height = 218
         Hint = 
           'Input format: CTypeName=DelphiTypeName. Use CTRL + ENTER to inse' +
           'rt new line.'
@@ -1159,6 +1159,20 @@ object FormMain: TFormMain
         TabOrder = 10
         WantReturns = False
         WordWrap = False
+      end
+      object CheckBoxConvert8ByteReturnStructsToUInt64: TCheckBox
+        Left = 12
+        Top = 527
+        Width = 661
+        Height = 34
+        Margins.Left = 7
+        Margins.Top = 7
+        Margins.Right = 7
+        Margins.Bottom = 7
+        Caption = 'Convert 8-byte return structs to UInt64 (experimental)'
+        TabOrder = 11
+        Visible = False
+        OnClick = CheckBoxConvert8ByteReturnStructsToUInt64Click
       end
     end
     object CardIgnore: TCard
@@ -1177,7 +1191,7 @@ object FormMain: TFormMain
         AlignWithMargins = True
         Left = 12
         Top = 8
-        Width = 1017
+        Width = 1030
         Height = 54
         Margins.Left = 12
         Margins.Top = 8
@@ -1189,6 +1203,7 @@ object FormMain: TFormMain
           'be translated. Enter one symbol per line. Symbols are case-sensi' +
           'tive.'
         WordWrap = True
+        ExplicitWidth = 1017
       end
       object MemoIgnore: TMemo
         AlignWithMargins = True
@@ -1327,8 +1342,8 @@ object FormMain: TFormMain
   end
   object MainMenu: TMainMenu
     Images = ImageList
-    Left = 276
-    Top = 460
+    Left = 84
+    Top = 652
     object MenuFile: TMenuItem
       Caption = 'File'
       object MenuNew: TMenuItem
@@ -1458,8 +1473,8 @@ object FormMain: TFormMain
       end>
     Options = [fdoOverWritePrompt, fdoPathMustExist]
     Title = 'Target Pascal file'
-    Left = 168
-    Top = 412
+    Left = 72
+    Top = 652
   end
   object OpenDialogProject: TFileOpenDialog
     FavoriteLinks = <>

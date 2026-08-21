@@ -153,6 +153,7 @@ type
     EditLibDbgWin32: TEdit;
     LabelDebugLibraryName: TLabel;
     ButtonTranslate: TButton;
+    CheckBoxConvert8ByteReturnStructsToUInt64: TCheckBox;
     procedure ButtonGroupCategoriesButtonClicked(Sender: TObject; Index: Integer);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure ActionAddCmdLineArgExecute(Sender: TObject);
@@ -198,6 +199,7 @@ type
     procedure FormDestroy(Sender: TObject);
     procedure ButtonTranslateClick(Sender: TObject);
     procedure ScriptMemoChange(Sender: TObject);
+    procedure CheckBoxConvert8ByteReturnStructsToUInt64Click(Sender: TObject);
   private
     { Private declarations }
     FProject: TProject;
@@ -411,7 +413,6 @@ end;
 
 procedure TFormMain.ButtonTranslateClick(Sender: TObject);
 begin
-  //
   ActionRunTranslatorExecute(nil);
 end;
 
@@ -419,6 +420,14 @@ procedure TFormMain.ButtonGroupCategoriesButtonClicked(Sender: TObject;
   Index: Integer);
 begin
   CardPanel.ActiveCardIndex := Index;
+end;
+
+procedure TFormMain.CheckBoxConvert8ByteReturnStructsToUInt64Click(
+  Sender: TObject);
+begin
+  {$IFDEF EXPERIMENTAL}
+  FProject.Convert8ByteReturnStructsToUInt64 := CheckBoxConvert8ByteReturnStructsToUInt64.Checked;
+  {$ENDIF}
 end;
 
 procedure TFormMain.CheckBoxDelayedLoadingClick(Sender: TObject);
@@ -551,6 +560,7 @@ begin
   {$ENDIF}
   {$IFDEF EXPERIMENTAL}
   CheckBoxPrefixSymbolsWithUnderscore.Visible := True;
+  CheckBoxConvert8ByteReturnStructsToUInt64.Visible := True;
   {$ENDIF}
   FProject := TProject.Create;
   CardPanel.ActiveCardIndex := 0;
@@ -768,6 +778,7 @@ begin
   CheckBoxDirectivesAsReservedWords.Checked := FProject.TreatDirectivesAsReservedWords;
   {$IFDEF EXPERIMENTAL}
   CheckBoxPrefixSymbolsWithUnderscore.Checked := FProject.PrefixSymbolsWithUnderscore;
+  CheckBoxConvert8ByteReturnStructsToUInt64.Checked := FProject.Convert8ByteReturnStructsToUInt64;
   {$ENDIF}
   CheckBoxDelayedLoading.Checked := FProject.DelayedLoading;
   ComboBoxEnumHandling.ItemIndex := Ord(FProject.EnumHandling);

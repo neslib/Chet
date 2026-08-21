@@ -187,6 +187,7 @@ type
     FReservedWordHandling: TReservedWordHandling;
     {$IFDEF EXPERIMENTAL}
     FPrefixSymbolsWithUnderscore: Boolean;
+    FConvert8ByteReturnStructsToUInt64: Boolean;
     {$ENDIF}
     FTreatDirectivesAsReservedWords: Boolean;
     FDelayedLoading: Boolean;
@@ -213,6 +214,7 @@ type
     procedure SetTreatDirectivesAsReservedWords(const Value: Boolean);
     {$IFDEF EXPERIMENTAL}
     procedure SetPrefixSymbolsWithUnderscore(const Value: Boolean);
+    procedure SetConvert8ByteReturnStructsToUInt64(const Value: Boolean);
     {$ENDIF}
     procedure SetDelayedLoading(const Value: Boolean);
     procedure SetUnconvertibleHandling(const Value: TUnconvertibleHandling);
@@ -363,6 +365,16 @@ type
       underscore. This is useful if you wrap the C API's into a Delphi class
       structure and want to discourage the use of the C API's directory. }
     property PrefixSymbolsWithUnderscore: Boolean read FPrefixSymbolsWithUnderscore write SetPrefixSymbolsWithUnderscore;
+
+    { Whether to convert 8-byte struct return values to UInt64.
+      This is needed on some platforms where Delphi expects 8-byte return values
+      to be passes as a hidden out-parameter, while the C compiler returns these
+      in registers (like EDX:EAX) instead.
+      When set to True, these APIs return an UInt64 instead and users of the API
+      will have to typecast the result to the corresponding Delphi record type
+      (eg. a TPointF).
+      See https://en.delphipraxis.net/topic/11206-calling-c-dll-with-an-8-byte-struct-return-value-crashes-on-win32-works-on-win64/ }
+    property Convert8ByteReturnStructsToUInt64: Boolean read FConvert8ByteReturnStructsToUInt64 write SetConvert8ByteReturnStructsToUInt64;
     {$ENDIF}
 
     { Whether to add the "delayed" directive to imported routines to delay to
@@ -416,6 +428,7 @@ const // Ini Identifiers
   ID_TREAT_DIRECTIVES_AS_RESERVED_WORDS = 'TreatDirectivesAsReservedWords';
   {$IFDEF EXPERIMENTAL}
   ID_PREFIX_SYMBOLS_WITH_UNDERSCORE = 'PrefixSymbolsWithUnderscore';
+  ID_CONVERT_8BYTE_RETURN_STRUCTS_TO_UINT64 = 'Convert8ByteReturnStructsToUInt64';
   {$ENDIF}
   ID_DELAYED_LOADING = 'DelayedLoading';
   ID_ENUM_HANDLING = 'EnumHandling';
@@ -615,6 +628,7 @@ begin
     FTreatDirectivesAsReservedWords := IniFile.ReadBool(IS_CONVERT_OPTIONS, ID_TREAT_DIRECTIVES_AS_RESERVED_WORDS, True);
     {$IFDEF EXPERIMENTAL}
     FPrefixSymbolsWithUnderscore := IniFile.ReadBool(IS_CONVERT_OPTIONS, ID_PREFIX_SYMBOLS_WITH_UNDERSCORE, False);
+    FConvert8ByteReturnStructsToUInt64 := IniFile.ReadBool(IS_CONVERT_OPTIONS, ID_CONVERT_8BYTE_RETURN_STRUCTS_TO_UINT64, False);
     {$ENDIF}
     FDelayedLoading := IniFile.ReadBool(IS_CONVERT_OPTIONS, ID_DELAYED_LOADING, False);
     FEnumHandling := IniFile.ReadEnum(IS_CONVERT_OPTIONS, ID_ENUM_HANDLING, TEnumHandling.ConvertToEnum);
@@ -716,6 +730,7 @@ begin
     IniFile.WriteBool(IS_CONVERT_OPTIONS, ID_TREAT_DIRECTIVES_AS_RESERVED_WORDS, FTreatDirectivesAsReservedWords);
     {$IFDEF EXPERIMENTAL}
     IniFile.WriteBool(IS_CONVERT_OPTIONS, ID_PREFIX_SYMBOLS_WITH_UNDERSCORE, FPrefixSymbolsWithUnderscore);
+    IniFile.WriteBool(IS_CONVERT_OPTIONS, ID_CONVERT_8BYTE_RETURN_STRUCTS_TO_UINT64, FConvert8ByteReturnStructsToUInt64);
     {$ENDIF}
     IniFile.WriteBool(IS_CONVERT_OPTIONS, ID_DELAYED_LOADING, FDelayedLoading);
     IniFile.WriteEnum(IS_CONVERT_OPTIONS, ID_ENUM_HANDLING, FEnumHandling);
@@ -869,6 +884,15 @@ begin
   if (Value <> FPrefixSymbolsWithUnderscore) then
   begin
     FPrefixSymbolsWithUnderscore := Value;
+    Modified := True;
+  end;
+end;
+
+procedure TProject.SetConvert8ByteReturnStructsToUInt64(const Value: Boolean);
+begin
+  if (Value <> FConvert8ByteReturnStructsToUInt64) then
+  begin
+    FConvert8ByteReturnStructsToUInt64 := Value;
     Modified := True;
   end;
 end;
